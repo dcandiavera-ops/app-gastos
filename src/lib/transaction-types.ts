@@ -5,6 +5,11 @@ export type TransactionRecord = {
   description: string;
   type: string;
   categoryId: string | null;
+  category?: {
+    id: string;
+    name: string;
+    color: string;
+  } | null;
   userId?: string | null;
   createdAt: Date;
   updatedAt: Date;

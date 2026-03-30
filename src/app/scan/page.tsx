@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, LoaderCircle, ReceiptText, Save, Upload } from 'lucide-react';
+import { Camera, LoaderCircle, ReceiptText, Save, Upload, X } from 'lucide-react';
+import { DEFAULT_EXPENSE_CATEGORIES } from '@/lib/category-defaults';
 
 type ScannedReceipt = {
   merchant: string;
@@ -16,6 +17,12 @@ type ScannedReceipt = {
     color: string;
     confidence: 'high' | 'medium' | 'low';
   } | null;
+};
+
+type CategoryOption = {
+  id?: string;
+  name: string;
+  color: string;
 };
 
 const OCR_MAX_FILE_SIZE_BYTES = 1024 * 1024;
@@ -99,6 +106,37 @@ export default function Scanner() {
   const [error, setError] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [receipt, setReceipt] = useState<ScannedReceipt | null>(null);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadCategories = async () => {
+      try {
+        const response = await fetch('/api/categories');
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as CategoryOption[];
+        if (!ignore) {
+          setCategories(payload.length > 0 ? payload : DEFAULT_EXPENSE_CATEGORIES);
+        }
+      } catch (loadError) {
+        console.error(loadError);
+        if (!ignore) {
+          setCategories(DEFAULT_EXPENSE_CATEGORIES);
+        }
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -120,6 +158,15 @@ export default function Scanner() {
       return 'Lectura media';
     }
     return 'Revision recomendada';
+  }, [receipt]);
+
+  useEffect(() => {
+    if (!receipt) {
+      setSelectedCategoryName(null);
+      return;
+    }
+
+    setSelectedCategoryName(receipt.suggestedCategory?.name ?? null);
   }, [receipt]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,8 +242,11 @@ export default function Scanner() {
           date: receipt.date ?? new Date().toISOString(),
           description: receipt.description,
           type: 'EXPENSE',
-          suggestedCategoryName: receipt.suggestedCategory?.name ?? null,
-          suggestedCategoryColor: receipt.suggestedCategory?.color ?? null,
+          suggestedCategoryName: selectedCategoryName ?? receipt.suggestedCategory?.name ?? null,
+          suggestedCategoryColor:
+            categories.find((category) => category.name === selectedCategoryName)?.color ??
+            receipt.suggestedCategory?.color ??
+            null,
         }),
       });
 
@@ -214,6 +264,16 @@ export default function Scanner() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleCancel = () => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+
+    setPreviewUrl('');
+    setReceipt(null);
+    setError('');
   };
 
   return (
@@ -334,20 +394,58 @@ export default function Scanner() {
                   )}
                 </div>
 
+                <div className="mt-4 rounded-2xl bg-surface-container-highest/50 px-4 py-4 border border-outline-variant/20">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Categoria para guardar</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {categories.map((category) => {
+                      const isSelected = selectedCategoryName === category.name;
+
+                      return (
+                        <button
+                          key={category.name}
+                          onClick={() => setSelectedCategoryName(category.name)}
+                          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all ${
+                            isSelected
+                              ? 'border-primary/40 bg-primary/15 text-primary'
+                              : 'border-outline-variant/20 bg-surface text-on-surface/70'
+                          }`}
+                          type="button"
+                        >
+                          <span
+                            className="h-2.5 w-2.5 rounded-full border border-white/10"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          {category.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="mt-6 space-y-3">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Texto OCR</p>
                   <pre className="whitespace-pre-wrap text-sm text-on-surface/70 bg-surface-container-highest/40 rounded-2xl p-4 border border-outline-variant/20 max-h-64 overflow-auto">{receipt.rawText}</pre>
                 </div>
               </div>
 
-              <button
-                onClick={handleSave}
-                disabled={isSaving || receipt.amount === null}
-                className="w-full bg-primary text-surface font-extrabold text-lg py-5 rounded-full shadow-[0_12px_24px_rgba(170,255,220,0.2)] active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-3"
-              >
-                {isSaving ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                {isSaving ? 'Guardando...' : 'Guardar como gasto'}
-              </button>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                  className="w-full bg-surface-container-highest text-on-surface font-extrabold text-lg py-5 rounded-full border border-outline-variant/20 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-3"
+                >
+                  <X className="h-5 w-5" />
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving || receipt.amount === null}
+                  className="w-full bg-primary text-surface font-extrabold text-lg py-5 rounded-full shadow-[0_12px_24px_rgba(170,255,220,0.2)] active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-3"
+                >
+                  {isSaving ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                  {isSaving ? 'Guardando...' : 'Guardar como gasto'}
+                </button>
+              </div>
             </>
           ) : (
             <div className="rounded-2xl border border-dashed border-outline-variant/30 px-5 py-10 text-center">

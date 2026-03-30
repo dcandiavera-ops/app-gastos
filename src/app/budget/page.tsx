@@ -1,4 +1,5 @@
 import { ChartPie } from 'lucide-react';
+import TransactionsEditorList from '@/components/TransactionsEditorList';
 import { formatClp, startOfCurrentMonth } from '@/lib/money';
 import { requireAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export default async function Budget() {
   const user = await requireAuthUser();
   const monthStart = startOfCurrentMonth();
-  const [expenses, income, categories] = await Promise.all([
+  const [expenses, income, categories, monthlyTransactions] = await Promise.all([
     prisma.transaction.aggregate({
       _sum: { amount: true },
       where: {
@@ -37,6 +38,16 @@ export default async function Budget() {
         },
       },
       orderBy: { name: 'asc' },
+    }),
+    prisma.transaction.findMany({
+      where: {
+        userId: user.id,
+        date: { gte: monthStart },
+      },
+      include: {
+        category: true,
+      },
+      orderBy: { date: 'desc' },
     }),
   ]);
 
@@ -119,6 +130,22 @@ export default async function Budget() {
             <p className="text-sm text-on-surface/50 mt-2">Puedes usar la app sin categorias. Si luego quieres, agregamos clasificacion automatica.</p>
           </div>
         )}
+      </section>
+
+      <section className="glass-card p-6 rounded-[2rem] border border-outline-variant/20 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-black">Editar movimientos del mes</h2>
+          <span className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Monto, fecha, tipo y categoria</span>
+        </div>
+        <TransactionsEditorList
+          categories={categories.map((category) => ({
+            id: category.id,
+            name: category.name,
+            color: category.color,
+          }))}
+          transactions={monthlyTransactions}
+          emptyMessage="No hay movimientos este mes."
+        />
       </section>
     </main>
   );

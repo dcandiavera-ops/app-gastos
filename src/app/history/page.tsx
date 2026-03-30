@@ -1,7 +1,7 @@
 import ExportButton from '@/components/ExportButton';
-import { CirclePlus, Inbox, ListFilter, ReceiptText } from 'lucide-react';
+import { Inbox, ListFilter } from 'lucide-react';
+import TransactionsEditorList from '@/components/TransactionsEditorList';
 import { requireAuthUser } from '@/lib/auth';
-import { formatClp } from '@/lib/money';
 import { prisma } from '@/lib/prisma';
 import type { TransactionRecord } from '@/lib/transaction-types';
 
@@ -13,7 +13,13 @@ export default async function History() {
     where: {
       userId: user.id,
     },
+    include: {
+      category: true,
+    },
     orderBy: { date: 'desc' },
+  });
+  const categories = await prisma.category.findMany({
+    orderBy: { name: 'asc' },
   });
 
   const groupedTransactions = transactions.reduce((groups, tx) => {
@@ -52,25 +58,10 @@ export default async function History() {
               <div className="flex-1 h-px bg-gradient-to-r from-outline-variant/30 to-transparent"></div>
             </div>
             <div className="space-y-3">
-              {txs.map((tx) => (
-                <div key={tx.id} className="glass-card p-5 rounded-[1.5rem] flex items-center justify-between group hover:bg-surface-bright/30 transition-all cursor-pointer">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-colors ${tx.type === 'INCOME' ? 'bg-primary/20 text-primary shadow-[0_0_15px_rgba(170,255,220,0.1)]' : 'bg-surface-container-highest text-on-surface/60 group-hover:bg-primary/10'}`}>
-                      {tx.type === 'INCOME' ? <CirclePlus className="h-7 w-7" /> : <ReceiptText className="h-7 w-7" />}
-                    </div>
-                    <div>
-                      <p className="font-bold text-lg text-on-surface group-hover:text-primary transition-colors">{tx.description || 'Movimiento'}</p>
-                      <p className="text-xs text-on-surface/50 font-medium font-mono uppercase">REF: {tx.id.substring(0, 8)}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-extrabold text-2xl tracking-tight ${tx.type === 'INCOME' ? 'text-primary drop-shadow-[0_0_10px_rgba(170,255,220,0.3)]' : 'text-on-surface'}`}>
-                      {tx.type === 'EXPENSE' ? '-' : '+'}${formatClp(tx.amount)}
-                    </p>
-                    <p className="text-[10px] uppercase tracking-widest text-on-surface/40 font-bold mt-1">CLP</p>
-                  </div>
-                </div>
-              ))}
+              <TransactionsEditorList
+                categories={categories}
+                transactions={txs}
+              />
             </div>
           </div>
         )) : (

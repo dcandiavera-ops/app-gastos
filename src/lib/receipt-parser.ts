@@ -62,7 +62,24 @@ const CATEGORY_RULES: CategoryRule[] = [
   {
     name: 'Comida',
     color: '#FDBA74',
-    keywords: ['mcdonald', 'burger king', 'starbucks', 'kfc', 'subway', 'restaurant', 'cafeteria', 'juan maestro'],
+    keywords: [
+      'mcdonald',
+      'burger king',
+      'starbucks',
+      'kfc',
+      'subway',
+      'restaurant',
+      'cafeteria',
+      'juan maestro',
+      'mariscos',
+      'pescado',
+      'especializados de pescado',
+      'venta al por menor en comercios',
+      'alimentos',
+      'comida',
+      'cocineria',
+      'fuente de soda',
+    ],
   },
   {
     name: 'Hogar',
@@ -108,6 +125,12 @@ function looksLikeRutToken(token: string) {
   );
 }
 
+function lineLooksLikeLocationOrMetadata(line: string) {
+  return /(av\.?|avenida|calle|pasaje|psje|direccion|concepcion|bio bio|region|chile|local|n°|nº|numero|fecha de emision)/.test(
+    line,
+  );
+}
+
 function extractAmount(lines: string[]) {
   const rankedMatches: Array<{ value: number; score: number }> = [];
 
@@ -115,6 +138,8 @@ function extractAmount(lines: string[]) {
     const numbers = line.match(/\$?\s*\d[\d.,]{2,}/g) ?? [];
     const lower = normalizeText(line);
     const lineBias = Math.max(0, lines.length - index);
+    const isTotalLine = /(total|monto total|total a pagar|importe|saldo|total tarjeta|total \$)/.test(lower);
+    const isTaxLine = /(subtotal|neto|iva|vuelto|propina)/.test(lower);
 
     if (
       /(rut|rol unico tributario|folio|cajero|caja|cliente|tarjeta|transbank|autorizacion|operacion|terminal)/.test(lower)
@@ -130,11 +155,11 @@ function extractAmount(lines: string[]) {
 
       let score = lineBias;
 
-      if (/(total|monto total|total a pagar|importe|saldo|total tarjeta|total \$)/.test(lower)) {
-        score += 100;
+      if (isTotalLine) {
+        score += 160;
       }
 
-      if (/(subtotal|neto|iva|vuelto|propina)/.test(lower)) {
+      if (isTaxLine) {
         score -= 25;
       }
 
@@ -146,16 +171,32 @@ function extractAmount(lines: string[]) {
         score -= 120;
       }
 
-      if (value >= 1_000_000 && !/(total|importe|saldo)/.test(lower)) {
+      if (lineLooksLikeLocationOrMetadata(lower) && !isTotalLine) {
+        score -= 80;
+      }
+
+      if (/\b\d{3,5}\b/.test(token) && lineLooksLikeLocationOrMetadata(lower) && !isTotalLine) {
+        score -= 60;
+      }
+
+      if (value >= 1_000_000 && !isTotalLine) {
         score -= 30;
       }
 
-      if (index <= 2 && !/(total|importe|saldo)/.test(lower)) {
+      if (index <= 2 && !isTotalLine) {
         score -= 20;
       }
 
       if (value > 1000) {
         score += 15;
+      }
+
+      if (isTotalLine && /\$\s*\d/.test(token)) {
+        score += 40;
+      }
+
+      if (isTotalLine && token === numbers[numbers.length - 1]) {
+        score += 25;
       }
 
       rankedMatches.push({ value, score });
