@@ -159,6 +159,24 @@ function findNearbyAmount(lines: string[], startIndex: number) {
   return null;
 }
 
+function findNearbyAmounts(lines: string[], startIndex: number, maxOffset = 4) {
+  const values: number[] = [];
+
+  for (let offset = 0; offset <= maxOffset; offset += 1) {
+    const candidateLine = lines[startIndex + offset];
+    if (!candidateLine) {
+      continue;
+    }
+
+    const amount = extractLineAmount(candidateLine);
+    if (amount !== null) {
+      values.push(amount);
+    }
+  }
+
+  return values;
+}
+
 function fuzzyIncludesTotal(line: string) {
   return /\b(total|tota[l1i\]]?|totai|tota1|toial|a pagar|importe total|monto total|saldo)\b/.test(line);
 }
@@ -173,6 +191,11 @@ function isSubtotalLine(line: string) {
 
 function isTaxAmountLine(line: string) {
   return /\b(iva|impuesto|vat|tax)\b/.test(line);
+}
+
+function isAmountOnlyLine(line: string) {
+  const normalized = line.trim();
+  return /^\$?\s*\d(?:[\d.,\s]{1,}\d)?$/.test(normalized);
 }
 
 function looksLikeRutToken(token: string) {
@@ -198,6 +221,55 @@ function extractAmount(lines: string[]) {
   const totalAmounts: number[] = [];
   let hasVat19 = false;
   let totalLineIndex = -1;
+
+  for (let index = 0; index < lines.length - 1; index += 1) {
+    const labelBlock: string[] = [];
+    const amountBlock: number[] = [];
+
+    for (let cursor = index; cursor < Math.min(lines.length, index + 4); cursor += 1) {
+      const lower = normalizeText(lines[cursor]);
+      if (isSubtotalLine(lower) || isTaxAmountLine(lower) || fuzzyIncludesTotal(lower)) {
+        labelBlock.push(lower);
+      } else {
+        break;
+      }
+    }
+
+    if (labelBlock.length < 2) {
+      continue;
+    }
+
+    const amountStartIndex = index + labelBlock.length;
+    for (let cursor = amountStartIndex; cursor < Math.min(lines.length, amountStartIndex + labelBlock.length + 1); cursor += 1) {
+      if (!isAmountOnlyLine(lines[cursor])) {
+        break;
+      }
+
+      const amount = extractLineAmount(lines[cursor]);
+      if (amount !== null) {
+        amountBlock.push(amount);
+      }
+    }
+
+    if (amountBlock.length >= labelBlock.length) {
+      for (let blockIndex = 0; blockIndex < labelBlock.length; blockIndex += 1) {
+        const label = labelBlock[blockIndex];
+        const amount = amountBlock[blockIndex];
+
+        if (isSubtotalLine(label)) {
+          subtotalAmounts.push(amount);
+        }
+
+        if (isTaxAmountLine(label)) {
+          ivaAmounts.push(amount);
+        }
+
+        if (fuzzyIncludesTotal(label)) {
+          totalAmounts.push(amount);
+        }
+      }
+    }
+  }
 
   for (const [index, line] of lines.entries()) {
     const numbers = line.match(/\$?\s*\d(?:[\d.,\s]{1,}\d)?/g) ?? [];
@@ -231,7 +303,11 @@ function extractAmount(lines: string[]) {
 
     if (isTotalLine) {
       totalLineIndex = index;
-      const nearbyAmount = lineAmount ?? findNearbyAmount(lines, index + 1);
+      const nearbyCandidates = lineAmount !== null ? [lineAmount] : findNearbyAmounts(lines, index + 1);
+      const nearbyAmount =
+        nearbyCandidates.length > 0
+          ? nearbyCandidates.sort((a, b) => b - a)[0]
+          : findNearbyAmount(lines, index + 1);
       if (nearbyAmount !== null) {
         totalAmounts.push(nearbyAmount);
       }
