@@ -26,7 +26,8 @@ type CategoryOption = {
 };
 
 const OCR_MAX_FILE_SIZE_BYTES = 1024 * 1024;
-const MIN_COMPRESSED_DIMENSION = 1400;
+const MIN_LONGEST_SIDE_AFTER_RESIZE = 1400;
+const OCR_MAX_LONGEST_SIDE = 2200;
 
 async function loadImageElement(file: File) {
   const objectUrl = URL.createObjectURL(file);
@@ -71,7 +72,7 @@ async function optimizeReceiptImage(file: File) {
   }
 
   const longestSide = Math.max(image.width, image.height);
-  const scale = longestSide > 2200 ? 2200 / longestSide : 1;
+  const scale = longestSide > OCR_MAX_LONGEST_SIDE ? OCR_MAX_LONGEST_SIDE / longestSide : 1;
   let width = Math.max(1, Math.round(image.width * scale));
   let height = Math.max(1, Math.round(image.height * scale));
   let quality = 0.9;
@@ -80,7 +81,9 @@ async function optimizeReceiptImage(file: File) {
     canvas.width = width;
     canvas.height = height;
     context.clearRect(0, 0, width, height);
+    context.filter = 'grayscale(100%) contrast(145%) brightness(108%)';
     context.drawImage(image, 0, 0, width, height);
+    context.filter = 'none';
 
     const compressedFile = await canvasToFile(canvas, quality, file.name);
     if (compressedFile.size <= OCR_MAX_FILE_SIZE_BYTES) {
@@ -91,8 +94,11 @@ async function optimizeReceiptImage(file: File) {
 
     if (quality < 0.5) {
       quality = 0.82;
-      width = Math.max(MIN_COMPRESSED_DIMENSION, Math.round(width * 0.82));
-      height = Math.max(MIN_COMPRESSED_DIMENSION, Math.round(height * 0.82));
+      const currentLongestSide = Math.max(width, height);
+      const nextLongestSide = Math.max(MIN_LONGEST_SIDE_AFTER_RESIZE, Math.round(currentLongestSide * 0.82));
+      const resizeRatio = nextLongestSide / currentLongestSide;
+      width = Math.max(1, Math.round(width * resizeRatio));
+      height = Math.max(1, Math.round(height * resizeRatio));
     }
   }
 

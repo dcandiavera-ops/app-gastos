@@ -18,6 +18,8 @@ type CategoryRule = {
   keywords: string[];
 };
 
+type ReceiptKind = 'getnet' | 'stacked_totals' | 'weighted_items' | 'generic';
+
 const MERCHANT_BLOCKLIST = [
   'boleta',
   'factura',
@@ -229,10 +231,6 @@ function lineLooksLikeLocationOrMetadata(line: string) {
   );
 }
 
-function isGetnetReceipt(lines: string[]) {
-  return lines.some((line) => /\bgetnet\b/.test(normalizeText(line)));
-}
-
 function extractGetnetAmount(lines: string[]) {
   for (const [index, rawLine] of lines.entries()) {
     const lower = normalizeText(rawLine);
@@ -256,13 +254,41 @@ function extractGetnetAmount(lines: string[]) {
 }
 
 function extractGetnetMerchant(lines: string[]) {
+  const businessLineParts: string[] = [];
+  let seenRutLine = false;
+
   for (const rawLine of lines) {
     const line = normalizeLine(rawLine);
     const lower = normalizeText(line);
 
+    if (/^rut:/.test(lower)) {
+      seenRutLine = true;
+      continue;
+    }
+
+    if (seenRutLine) {
+      if (
+        lineLooksLikeLocationOrMetadata(lower) ||
+        isReferenceLine(lower) ||
+        isPaymentLine(lower) ||
+        /\b(getnet|compra afecta|valido como boleta|monto|total|iva)\b/.test(lower)
+      ) {
+        break;
+      }
+
+      if (/[a-zA-Z]/.test(line) && line.length >= 4) {
+        businessLineParts.push(line);
+        if (businessLineParts.length >= 2) {
+          return businessLineParts.join(' ').slice(0, 80);
+        }
+        continue;
+      }
+    }
+
     if (
       line.length < 4 ||
       /\bgetnet\b/.test(lower) ||
+      /^(compra afecta|valido como boleta|boleta electronica|copia comercio)$/i.test(lower) ||
       MERCHANT_BLOCKLIST.some((word) => lower.includes(word)) ||
       isReferenceLine(lower) ||
       isPaymentLine(lower) ||
@@ -278,7 +304,81 @@ function extractGetnetMerchant(lines: string[]) {
     return line;
   }
 
-  return 'GETNET';
+  return businessLineParts.length > 0 ? businessLineParts.join(' ').slice(0, 80) : 'GETNET';
+}
+
+function detectReceiptKind(lines: string[]): ReceiptKind {
+  const normalizedLines = lines.map((line) => normalizeText(line));
+
+  if (normalizedLines.some((line) => /\bgetnet\b/.test(line))) {
+    return 'getnet';
+  }
+
+  if (
+    normalizedLines.some((line) => /(descripcion|kg\(pza\)|plu)/.test(line)) &&
+    normalizedLines.some((line) => /(efectivo|vuelto|vuelta)/.test(line))
+  ) {
+    return 'weighted_items';
+  }
+
+  if (
+    normalizedLines.some((line) => isSubtotalLine(line)) &&
+    normalizedLines.some((line) => isTaxAmountLine(line)) &&
+    normalizedLines.some((line) => fuzzyIncludesTotal(line))
+  ) {
+    return 'stacked_totals';
+  }
+
+  return 'generic';
+}
+
+function extractWeightedReceiptAmount(lines: string[]) {
+  const repeatedBottomAmount = extractRepeatedBottomAmount(lines);
+  if (repeatedBottomAmount !== null) {
+    return repeatedBottomAmount;
+  }
+
+  return extractAmount(lines);
+}
+
+function extractStackedTotalsAmount(lines: string[]) {
+  const totalFromGeneric = extractAmount(lines);
+  if (totalFromGeneric !== null) {
+    return totalFromGeneric;
+  }
+
+  return null;
+}
+
+function extractRepeatedBottomAmount(lines: string[]) {
+  const tailStart = Math.max(0, lines.length - 12);
+  const tailLines = lines.slice(tailStart);
+  const normalizedTail = tailLines.map((line) => normalizeText(line));
+
+  const hasPaymentSummary = normalizedTail.some((line) => fuzzyIncludesTotal(line)) &&
+    normalizedTail.some((line) => /(efectivo|vuelto|vuelta)/.test(line));
+
+  if (!hasPaymentSummary) {
+    return null;
+  }
+
+  const counts = new Map<number, number>();
+
+  for (const line of tailLines) {
+    const amount = extractLineAmount(line);
+    if (amount === null || amount <= 0) {
+      continue;
+    }
+
+    counts.set(amount, (counts.get(amount) ?? 0) + 1);
+  }
+
+  const repeatedCandidates = [...counts.entries()]
+    .filter(([, count]) => count >= 2)
+    .map(([value]) => value)
+    .sort((a, b) => b - a);
+
+  return repeatedCandidates[0] ?? null;
 }
 
 function extractAmount(lines: string[]) {
@@ -459,7 +559,17 @@ function extractAmount(lines: string[]) {
     }
   }
 
+  const repeatedBottomAmount = extractRepeatedBottomAmount(lines);
+
   if (totalAmounts.length) {
+    if (repeatedBottomAmount !== null && repeatedBottomAmount > 0) {
+      const bestTotalCandidate = Math.max(...totalAmounts);
+
+      if (repeatedBottomAmount >= bestTotalCandidate) {
+        return repeatedBottomAmount;
+      }
+    }
+
     totalAmounts.sort((a, b) => a - b);
     if (totalAmounts.length >= 2 && totalAmounts[0] === totalAmounts[1]) {
       return totalAmounts[0];
@@ -489,6 +599,10 @@ function extractAmount(lines: string[]) {
     if (vatDerivedTotal > Math.max(...subtotalAmounts)) {
       return vatDerivedTotal;
     }
+  }
+
+  if (repeatedBottomAmount !== null) {
+    return repeatedBottomAmount;
   }
 
   rankedMatches.sort((a, b) => b.score - a.score || b.value - a.value);
@@ -595,9 +709,16 @@ export function parseReceiptText(rawText: string): ParsedReceipt {
     .map(normalizeLine)
     .filter(Boolean);
 
-  const getnetReceipt = isGetnetReceipt(lines);
-  const merchant = getnetReceipt ? extractGetnetMerchant(lines) : extractMerchant(lines);
-  const amount = getnetReceipt ? extractGetnetAmount(lines) ?? extractAmount(lines) : extractAmount(lines);
+  const receiptKind = detectReceiptKind(lines);
+  const merchant = receiptKind === 'getnet' ? extractGetnetMerchant(lines) : extractMerchant(lines);
+  const amount =
+    receiptKind === 'getnet'
+      ? extractGetnetAmount(lines) ?? extractAmount(lines)
+      : receiptKind === 'weighted_items'
+        ? extractWeightedReceiptAmount(lines)
+        : receiptKind === 'stacked_totals'
+          ? extractStackedTotalsAmount(lines)
+          : extractAmount(lines);
   const date = extractDate(rawText);
   const suggestedCategory = suggestCategory(merchant, rawText);
 
