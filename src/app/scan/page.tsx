@@ -62,7 +62,11 @@ export default function Scanner() {
 
       const payload = await response.json();
       if (!response.ok) {
-        setError(payload.error || 'No se pudo procesar la boleta');
+        const providerMessage = payload.providerError ? ` Detalle OCR: ${payload.providerError}` : '';
+        const fallbackMessage = payload.usedFallbackKey
+          ? ' El servidor sigue usando la clave demo de OCR.space.'
+          : '';
+        setError((payload.error || 'No se pudo procesar la boleta') + providerMessage + fallbackMessage);
         return;
       }
 
