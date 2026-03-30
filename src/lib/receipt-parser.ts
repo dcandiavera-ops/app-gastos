@@ -98,21 +98,36 @@ function parseAmountToken(token: string) {
   return Number.isFinite(value) ? value : null;
 }
 
+function looksLikeRutToken(token: string) {
+  const compact = token.replace(/\s+/g, '');
+
+  return (
+    /^\d{1,2}\.\d{3}\.\d{3}-[\dkK]$/.test(compact) ||
+    /^\d{7,8}-[\dkK]$/.test(compact) ||
+    /^\d{9,10}$/.test(compact)
+  );
+}
+
 function extractAmount(lines: string[]) {
   const rankedMatches: Array<{ value: number; score: number }> = [];
 
   for (const [index, line] of lines.entries()) {
     const numbers = line.match(/\$?\s*\d[\d.,]{2,}/g) ?? [];
-    const parsed = numbers.map(parseAmountToken).filter((value): value is number => value !== null && value > 0);
-
-    if (!parsed.length) {
-      continue;
-    }
-
     const lower = normalizeText(line);
     const lineBias = Math.max(0, lines.length - index);
 
-    for (const value of parsed) {
+    if (
+      /(rut|rol unico tributario|folio|cajero|caja|cliente|tarjeta|transbank|autorizacion|operacion|terminal)/.test(lower)
+    ) {
+      continue;
+    }
+
+    for (const token of numbers) {
+      const value = parseAmountToken(token);
+      if (value === null || value <= 0) {
+        continue;
+      }
+
       let score = lineBias;
 
       if (/(total|monto total|total a pagar|importe|saldo|total tarjeta|total \$)/.test(lower)) {
@@ -121,6 +136,22 @@ function extractAmount(lines: string[]) {
 
       if (/(subtotal|neto|iva|vuelto|propina)/.test(lower)) {
         score -= 25;
+      }
+
+      if (looksLikeRutToken(token)) {
+        score -= 120;
+      }
+
+      if (/\b\d{1,2}\.\d{3}\.\d{3}-[\dkK]\b/i.test(line) || /\brut\b/i.test(line)) {
+        score -= 120;
+      }
+
+      if (value >= 1_000_000 && !/(total|importe|saldo)/.test(lower)) {
+        score -= 30;
+      }
+
+      if (index <= 2 && !/(total|importe|saldo)/.test(lower)) {
+        score -= 20;
       }
 
       if (value > 1000) {
