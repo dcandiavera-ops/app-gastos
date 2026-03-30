@@ -4,13 +4,18 @@ import { requireAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { formatClp, startOfCurrentMonth } from '@/lib/money';
 import type { TransactionRecord } from '@/lib/transaction-types';
+import MonthlyBudgetEditor from '@/components/MonthlyBudgetEditor';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Dashboard() {
   const user = await requireAuthUser();
   const monthStart = startOfCurrentMonth();
-  const [recentTransactions, monthlyExpenseAggregate, monthlyIncomeAggregate] = await Promise.all([
+  const [appUser, recentTransactions, monthlyExpenseAggregate, monthlyIncomeAggregate] = await Promise.all([
+    prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { monthlyBudget: true },
+    }),
     prisma.transaction.findMany({
       where: {
         userId: user.id,
@@ -38,8 +43,8 @@ export default async function Dashboard() {
 
   const actualSpent = monthlyExpenseAggregate._sum.amount ?? 0;
   const actualIncome = monthlyIncomeAggregate._sum.amount ?? 0;
-  const budget = 1000000;
-  const rawPercentage = (actualSpent / budget) * 100;
+  const budget = appUser.monthlyBudget;
+  const rawPercentage = budget > 0 ? (actualSpent / budget) * 100 : 0;
   const percentage = Math.min(rawPercentage, 100);
   const remaining = budget - actualSpent;
 
@@ -85,9 +90,9 @@ export default async function Dashboard() {
                 {formatClp(actualSpent)}
               </h1>
             </div>
-            <p className="text-sm font-bold text-on-surface/50 mt-3 bg-surface-container-highest/30 px-4 py-1 rounded-full border border-outline-variant/10">
-              de ${formatClp(budget)} presupuestado este mes
-            </p>
+            <div className="mt-3">
+              <MonthlyBudgetEditor initialValue={budget} />
+            </div>
           </div>
 
           <div className="w-full max-w-md mx-auto h-5 bg-[#060e20]/80 backdrop-blur-2xl rounded-full border border-outline-variant/30 p-1 relative overflow-hidden shadow-inner mt-6">

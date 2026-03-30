@@ -15,6 +15,7 @@ model User {
   id           String        @id
   name         String?
   email        String        @unique
+  monthlyBudget Float        @default(1000000)
   transactions Transaction[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
