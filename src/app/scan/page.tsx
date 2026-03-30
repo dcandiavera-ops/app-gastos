@@ -11,6 +11,11 @@ type ScannedReceipt = {
   description: string;
   confidence: 'high' | 'medium' | 'low';
   rawText: string;
+  suggestedCategory: {
+    name: string;
+    color: string;
+    confidence: 'high' | 'medium' | 'low';
+  } | null;
 };
 
 export default function Scanner() {
@@ -91,6 +96,8 @@ export default function Scanner() {
           date: receipt.date ?? new Date().toISOString(),
           description: receipt.description,
           type: 'EXPENSE',
+          suggestedCategoryName: receipt.suggestedCategory?.name ?? null,
+          suggestedCategoryColor: receipt.suggestedCategory?.color ?? null,
         }),
       });
 
@@ -205,6 +212,26 @@ export default function Scanner() {
                       {receipt.date ? new Date(receipt.date).toLocaleDateString('es-CL') : 'No detectada'}
                     </p>
                   </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl bg-surface-container-highest/50 px-4 py-4 border border-outline-variant/20">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Categoria sugerida</p>
+                  {receipt.suggestedCategory ? (
+                    <div className="mt-3 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="h-3.5 w-3.5 rounded-full border border-white/10"
+                          style={{ backgroundColor: receipt.suggestedCategory.color }}
+                        />
+                        <p className="text-lg font-black">{receipt.suggestedCategory.name}</p>
+                      </div>
+                      <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+                        {receipt.suggestedCategory.confidence === 'high' ? 'Alta confianza' : 'Sugerida'}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm text-on-surface/60">No se pudo inferir una categoria automaticamente.</p>
+                  )}
                 </div>
 
                 <div className="mt-6 space-y-3">

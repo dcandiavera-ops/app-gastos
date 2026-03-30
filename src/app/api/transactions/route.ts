@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const { amount, date, description, type, categoryId } = await request.json();
+    const { amount, date, description, type, categoryId, suggestedCategoryName, suggestedCategoryColor } = await request.json();
     const parsedAmount = Number(amount);
     const parsedDate = date ? new Date(date) : new Date();
     const normalizedType = type === 'INCOME' ? 'INCOME' : 'EXPENSE';
@@ -49,13 +49,44 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid date' }, { status: 400 });
     }
 
+    let resolvedCategoryId: string | null =
+      typeof categoryId === 'string' && categoryId.length > 0 ? categoryId : null;
+
+    if (!resolvedCategoryId && normalizedType === 'EXPENSE' && typeof suggestedCategoryName === 'string' && suggestedCategoryName.trim().length > 0) {
+      const normalizedCategoryName = suggestedCategoryName.trim();
+      const existingCategory = await prisma.category.findFirst({
+        where: {
+          name: {
+            equals: normalizedCategoryName,
+            mode: 'insensitive',
+          },
+        },
+      });
+
+      if (existingCategory) {
+        resolvedCategoryId = existingCategory.id;
+      } else {
+        const createdCategory = await prisma.category.create({
+          data: {
+            name: normalizedCategoryName,
+            color:
+              typeof suggestedCategoryColor === 'string' && suggestedCategoryColor.trim().length > 0
+                ? suggestedCategoryColor.trim()
+                : '#AAFFDC',
+          },
+        });
+
+        resolvedCategoryId = createdCategory.id;
+      }
+    }
+
     const transaction = await prisma.transaction.create({
       data: {
         amount: parsedAmount,
         date: parsedDate,
         description: normalizedDescription,
         type: normalizedType,
-        categoryId: typeof categoryId === 'string' && categoryId.length > 0 ? categoryId : null,
+        categoryId: resolvedCategoryId,
         userId: user.id,
       },
     });
