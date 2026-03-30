@@ -115,6 +115,17 @@ function parseAmountToken(token: string) {
   return Number.isFinite(value) ? value : null;
 }
 
+function extractLineAmount(line: string) {
+  const numbers = line.match(/\$?\s*\d[\d.,]{2,}/g) ?? [];
+
+  if (!numbers.length) {
+    return null;
+  }
+
+  const lastToken = numbers[numbers.length - 1];
+  return parseAmountToken(lastToken);
+}
+
 function looksLikeRutToken(token: string) {
   const compact = token.replace(/\s+/g, '');
 
@@ -133,6 +144,9 @@ function lineLooksLikeLocationOrMetadata(line: string) {
 
 function extractAmount(lines: string[]) {
   const rankedMatches: Array<{ value: number; score: number }> = [];
+  let subtotalAmount: number | null = null;
+  let ivaAmount: number | null = null;
+  let totalAmount: number | null = null;
 
   for (const [index, line] of lines.entries()) {
     const numbers = line.match(/\$?\s*\d[\d.,]{2,}/g) ?? [];
@@ -145,6 +159,18 @@ function extractAmount(lines: string[]) {
       /(rut|rol unico tributario|folio|cajero|caja|cliente|tarjeta|transbank|autorizacion|operacion|terminal)/.test(lower)
     ) {
       continue;
+    }
+
+    if (/(^|\s)(compra|subtotal|neto)(\s|$)/.test(lower)) {
+      subtotalAmount = extractLineAmount(line);
+    }
+
+    if (/\biva\b/.test(lower)) {
+      ivaAmount = extractLineAmount(line);
+    }
+
+    if (isTotalLine) {
+      totalAmount = extractLineAmount(line);
     }
 
     for (const token of numbers) {
@@ -203,6 +229,15 @@ function extractAmount(lines: string[]) {
     }
   }
 
+  if (totalAmount !== null) {
+    return totalAmount;
+  }
+
+  if (subtotalAmount !== null && ivaAmount !== null) {
+    const computedTotal = Math.round(subtotalAmount + ivaAmount);
+    return computedTotal;
+  }
+
   rankedMatches.sort((a, b) => b.score - a.score || b.value - a.value);
   return rankedMatches[0]?.value ?? null;
 }
@@ -212,6 +247,8 @@ function extractDate(text: string) {
     /\b(\d{4})-(\d{2})-(\d{2})\b/,
     /\b(\d{2})[/-](\d{2})[/-](\d{4})\b/,
     /\b(\d{2})[.-](\d{2})[.-](\d{4})\b/,
+    /\b(\d{1,2})[/-](\d{1,2})[/-](\d{2})\b/,
+    /\b(\d{1,2})[.-](\d{1,2})[.-](\d{2})\b/,
   ];
 
   for (const pattern of patterns) {
@@ -222,6 +259,11 @@ function extractDate(text: string) {
 
     if (pattern === patterns[0]) {
       return new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00.000Z`).toISOString();
+    }
+
+    if (pattern === patterns[3] || pattern === patterns[4]) {
+      const year = Number(match[3]) >= 70 ? `19${match[3]}` : `20${match[3]}`;
+      return new Date(`${year}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}T00:00:00.000Z`).toISOString();
     }
 
     return new Date(`${match[3]}-${match[2]}-${match[1]}T00:00:00.000Z`).toISOString();
