@@ -1,46 +1,62 @@
 import Link from 'next/link';
 import { CircleAlert, CircleCheck, CirclePlus, Inbox, List, ReceiptText, TriangleAlert } from 'lucide-react';
-import { ensureDbUser, requireAuthUser } from '@/lib/auth';
+import { ensureDbUser, getOptionalAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { formatClp, startOfCurrentMonth } from '@/lib/money';
 import type { TransactionRecord } from '@/lib/transaction-types';
 import MonthlyBudgetEditor from '@/components/MonthlyBudgetEditor';
+import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Dashboard() {
-  const user = await requireAuthUser();
-  const dbUser = await ensureDbUser(user);
-  const monthStart = startOfCurrentMonth();
-  const [recentTransactions, monthlyExpenseAggregate, monthlyIncomeAggregate] = await Promise.all([
-    prisma.transaction.findMany({
-      where: {
-        userId: user.id,
-      },
-      orderBy: { date: 'desc' },
-      take: 5,
-    }),
-    prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: {
-        userId: user.id,
-        type: 'EXPENSE',
-        date: { gte: monthStart },
-      },
-    }),
-    prisma.transaction.aggregate({
-      _sum: { amount: true },
-      where: {
-        userId: user.id,
-        type: 'INCOME',
-        date: { gte: monthStart },
-      },
-    }),
-  ]);
+  const user = await getOptionalAuthUser();
+  if (!user) {
+    redirect('/auth');
+  }
 
-  const actualSpent = monthlyExpenseAggregate._sum.amount ?? 0;
-  const actualIncome = monthlyIncomeAggregate._sum.amount ?? 0;
-  const budget = dbUser.monthlyBudget;
+  let budget = 1000000;
+  let recentTransactions: TransactionRecord[] = [];
+  let actualSpent = 0;
+  let actualIncome = 0;
+
+  try {
+    const dbUser = await ensureDbUser(user);
+    const monthStart = startOfCurrentMonth();
+    const [recentTransactionsResult, monthlyExpenseAggregate, monthlyIncomeAggregate] = await Promise.all([
+      prisma.transaction.findMany({
+        where: {
+          userId: user.id,
+        },
+        orderBy: { date: 'desc' },
+        take: 5,
+      }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: {
+          userId: user.id,
+          type: 'EXPENSE',
+          date: { gte: monthStart },
+        },
+      }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: {
+          userId: user.id,
+          type: 'INCOME',
+          date: { gte: monthStart },
+        },
+      }),
+    ]);
+
+    budget = dbUser.monthlyBudget;
+    recentTransactions = recentTransactionsResult;
+    actualSpent = monthlyExpenseAggregate._sum.amount ?? 0;
+    actualIncome = monthlyIncomeAggregate._sum.amount ?? 0;
+  } catch (error) {
+    console.error('Dashboard load error:', error);
+  }
+
   const rawPercentage = budget > 0 ? (actualSpent / budget) * 100 : 0;
   const percentage = Math.min(rawPercentage, 100);
   const remaining = budget - actualSpent;
