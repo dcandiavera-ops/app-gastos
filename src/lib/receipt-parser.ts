@@ -196,6 +196,7 @@ function extractAmount(lines: string[]) {
   const subtotalAmounts: number[] = [];
   const ivaAmounts: number[] = [];
   const totalAmounts: number[] = [];
+  let hasVat19 = false;
   let totalLineIndex = -1;
 
   for (const [index, line] of lines.entries()) {
@@ -205,6 +206,10 @@ function extractAmount(lines: string[]) {
     const isTotalLine = fuzzyIncludesTotal(lower);
     const isTaxLine = /(subtotal|neto|iva|vuelto|propina|impuesto)/.test(lower);
     const lineAmount = extractLineAmount(line);
+
+    if (/\biva\b/.test(lower) && /19\s*%/.test(lower)) {
+      hasVat19 = true;
+    }
 
     if (
       /(rut|rol unico tributario|folio|cajero|caja|cliente|tarjeta|transbank|autorizacion|operacion|terminal)/.test(lower)
@@ -216,7 +221,11 @@ function extractAmount(lines: string[]) {
       subtotalAmounts.push(lineAmount);
     }
 
-    if (isTaxAmountLine(lower) && lineAmount !== null) {
+    if (
+      isTaxAmountLine(lower) &&
+      lineAmount !== null &&
+      !(/%/.test(line) && lineAmount <= 100 && !/[$€£]/.test(line))
+    ) {
       ivaAmounts.push(lineAmount);
     }
 
@@ -316,6 +325,14 @@ function extractAmount(lines: string[]) {
 
     if (bestComputedTotal > 0) {
       return bestComputedTotal;
+    }
+  }
+
+  if (subtotalAmounts.length && hasVat19) {
+    const vatDerivedTotal = Math.round(Math.max(...subtotalAmounts) * 1.19);
+
+    if (vatDerivedTotal > Math.max(...subtotalAmounts)) {
+      return vatDerivedTotal;
     }
   }
 
