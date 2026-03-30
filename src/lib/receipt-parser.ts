@@ -110,11 +110,24 @@ function normalizeLine(line: string) {
 }
 
 function parseAmountToken(token: string) {
-  const normalized = token
-    .replace(/\s+/g, '')
-    .replace(/[^\d,.-]/g, '')
-    .replace(/\.(?=\d{3}\b)/g, '')
-    .replace(',', '.');
+  let normalized = token.replace(/\s+/g, '').replace(/[^\d,.-]/g, '');
+
+  if (/^-?\d{1,3}([.,]\d{3})+$/.test(normalized)) {
+    normalized = normalized.replace(/[.,]/g, '');
+  } else if (/^-?\d+[.,]\d{3}$/.test(normalized)) {
+    normalized = normalized.replace(/[.,]/g, '');
+  } else if (normalized.includes(',') && normalized.includes('.')) {
+    if (normalized.lastIndexOf(',') > normalized.lastIndexOf('.')) {
+      normalized = normalized.replace(/\./g, '').replace(',', '.');
+    } else {
+      normalized = normalized.replace(/,/g, '');
+    }
+  } else if (normalized.includes(',')) {
+    normalized = /^\d+,\d{1,2}$/.test(normalized) ? normalized.replace(',', '.') : normalized.replace(/,/g, '');
+  } else if (normalized.includes('.')) {
+    normalized = /^\d+\.\d{1,2}$/.test(normalized) ? normalized : normalized.replace(/\./g, '');
+  }
+
   const value = Number(normalized);
   return Number.isFinite(value) ? value : null;
 }
