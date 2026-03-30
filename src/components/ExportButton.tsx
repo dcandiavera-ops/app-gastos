@@ -1,5 +1,6 @@
 'use client';
 
+import { Download } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/transaction-types';
 
 export default function ExportButton({ transactions }: { transactions: TransactionRecord[] }) {
@@ -27,7 +28,7 @@ export default function ExportButton({ transactions }: { transactions: Transacti
       onClick={exportToCSV}
       className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 hover:bg-primary/20 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors border border-primary/30 text-primary active:scale-95 shadow-[0_0_15px_rgba(170,255,220,0.15)]"
     >
-      <span className="material-symbols-outlined text-[18px]">download</span>
+      <Download className="h-[18px] w-[18px]" />
       Excel CSV
     </button>
   );

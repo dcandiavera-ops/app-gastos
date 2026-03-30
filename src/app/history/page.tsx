@@ -1,4 +1,5 @@
 import ExportButton from '@/components/ExportButton';
+import { CirclePlus, Inbox, ListFilter, ReceiptText } from 'lucide-react';
 import { requireAuthUser } from '@/lib/auth';
 import { formatClp } from '@/lib/money';
 import { prisma } from '@/lib/prisma';
@@ -38,7 +39,7 @@ export default async function History() {
         <div className="flex items-center gap-3">
           <ExportButton transactions={transactions as TransactionRecord[]} />
           <button className="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center hover:bg-surface-bright transition-colors text-on-surface/60 border border-outline-variant/20 shadow-sm active:scale-95">
-            <span className="material-symbols-outlined">filter_list</span>
+            <ListFilter className="h-5 w-5" />
           </button>
         </div>
       </div>
@@ -55,9 +56,7 @@ export default async function History() {
                 <div key={tx.id} className="glass-card p-5 rounded-[1.5rem] flex items-center justify-between group hover:bg-surface-bright/30 transition-all cursor-pointer">
                   <div className="flex items-center gap-4">
                     <div className={`w-14 h-14 rounded-[1.2rem] flex items-center justify-center transition-colors ${tx.type === 'INCOME' ? 'bg-primary/20 text-primary shadow-[0_0_15px_rgba(170,255,220,0.1)]' : 'bg-surface-container-highest text-on-surface/60 group-hover:bg-primary/10'}`}>
-                      <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                        {tx.type === 'INCOME' ? 'add_circle' : 'receipt_long'}
-                      </span>
+                      {tx.type === 'INCOME' ? <CirclePlus className="h-7 w-7" /> : <ReceiptText className="h-7 w-7" />}
                     </div>
                     <div>
                       <p className="font-bold text-lg text-on-surface group-hover:text-primary transition-colors">{tx.description || 'Movimiento'}</p>
@@ -77,7 +76,7 @@ export default async function History() {
         )) : (
           <div className="glass-panel p-10 rounded-3xl text-center border border-outline-variant/10 shadow-lg mt-10 relative overflow-hidden">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 wealth-orb"></div>
-            <span className="material-symbols-outlined text-7xl text-primary/40 mb-6 block relative z-10" style={{ fontVariationSettings: "'FILL' 1" }}>inbox</span>
+            <Inbox className="relative z-10 mx-auto mb-6 h-16 w-16 text-primary/40" />
             <h3 className="text-2xl font-bold mb-3 relative z-10">Sin movimientos</h3>
             <p className="text-on-surface/60 text-sm max-w-xs mx-auto leading-relaxed relative z-10">Tus transacciones registradas apareceran aqui para control financiero personal.</p>
           </div>

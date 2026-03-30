@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Camera, LoaderCircle, ReceiptText, Save, Upload } from 'lucide-react';
 
 type ScannedReceipt = {
   merchant: string;
@@ -128,7 +129,7 @@ export default function Scanner() {
             ></div>
           ) : (
             <div className="absolute inset-0 flex flex-col gap-4 items-center justify-center">
-              <span className="material-symbols-outlined text-4xl text-on-surface/30 animate-pulse">photo_camera</span>
+              <Camera className="h-10 w-10 animate-pulse text-on-surface/30" />
               <p className="text-on-surface/50 font-medium tracking-widest text-xs uppercase">Carga una boleta desde el celular o navegador</p>
             </div>
           )}
@@ -140,7 +141,7 @@ export default function Scanner() {
 
             {isScanning ? (
               <div className="bg-surface/90 px-6 py-3 rounded-full border border-primary/50 shadow-[0_0_30px_rgba(170,255,220,0.4)] flex items-center gap-3">
-                <span className="material-symbols-outlined text-primary text-xl animate-spin">data_usage</span>
+                <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
                 <span className="font-bold tracking-widest text-[10px] uppercase text-primary">Analizando boleta...</span>
               </div>
             ) : (
@@ -153,7 +154,7 @@ export default function Scanner() {
                   onChange={handleFileChange}
                 />
                 <span className="inline-flex items-center gap-3 px-6 py-4 bg-white/10 backdrop-blur-md rounded-full border-2 border-white/50 hover:bg-white/20 active:scale-90 transition-all shadow-lg">
-                  <span className="material-symbols-outlined">upload</span>
+                  <Upload className="h-5 w-5" />
                   Subir boleta
                 </span>
               </label>
@@ -165,7 +166,7 @@ export default function Scanner() {
       <div className="flex-1 px-6 flex flex-col">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-lg font-bold flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary">receipt_long</span>
+            <ReceiptText className="h-5 w-5 text-primary" />
             Resultado del escaneo
           </h2>
           <span className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">OCR.space gratis</span>
@@ -217,9 +218,7 @@ export default function Scanner() {
                 disabled={isSaving || receipt.amount === null}
                 className="w-full bg-primary text-surface font-extrabold text-lg py-5 rounded-full shadow-[0_12px_24px_rgba(170,255,220,0.2)] active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-3"
               >
-                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  {isSaving ? 'hourglass_empty' : 'save'}
-                </span>
+                {isSaving ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
                 {isSaving ? 'Guardando...' : 'Guardar como gasto'}
               </button>
             </>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Delete, HandCoins, LoaderCircle, Save, Store, Wallet } from 'lucide-react';
 
 export default function ManualEntry() {
   const router = useRouter();
@@ -68,7 +69,7 @@ export default function ManualEntry() {
       <div className="space-y-6 mb-8">
         <div className="relative">
           <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-            <span className="material-symbols-outlined text-primary/60 text-xl">storefront</span>
+            <Store className="h-5 w-5 text-primary/60" />
           </div>
           <input
             value={description}
@@ -85,14 +86,14 @@ export default function ManualEntry() {
               onClick={() => setType('EXPENSE')}
               className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-full text-sm transition-all ${type === 'EXPENSE' ? 'bg-primary text-surface font-bold active-glow' : 'bg-surface-container-high text-on-surface/60 font-medium ghost-border'}`}
             >
-              <span className="material-symbols-outlined text-lg">payments</span>
+              <HandCoins className="h-[18px] w-[18px]" />
               Gasto
             </button>
             <button
               onClick={() => setType('INCOME')}
               className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-full text-sm transition-all ${type === 'INCOME' ? 'bg-primary text-surface font-bold active-glow' : 'bg-surface-container-high text-on-surface/60 font-medium ghost-border'}`}
             >
-              <span className="material-symbols-outlined text-lg">account_balance_wallet</span>
+              <Wallet className="h-[18px] w-[18px]" />
               Ingreso
             </button>
           </div>
@@ -106,7 +107,7 @@ export default function ManualEntry() {
             onClick={() => handleNumpadClick(buttonValue)}
             className={`glass-key ghost-border text-2xl font-bold py-6 rounded-2xl active:scale-95 transition-all ${buttonValue === 'backspace' ? 'text-primary hover:bg-primary/10' : 'text-on-surface hover:bg-primary/10'}`}
           >
-            {buttonValue === 'backspace' ? <span className="material-symbols-outlined">backspace</span> : buttonValue}
+            {buttonValue === 'backspace' ? <Delete className="mx-auto h-6 w-6" /> : buttonValue}
           </button>
         ))}
       </div>
@@ -116,9 +117,7 @@ export default function ManualEntry() {
         disabled={isSaving || parseFloat(amount) === 0}
         className="w-full bg-primary text-surface font-extrabold text-lg py-5 rounded-full shadow-[0_12px_24px_rgba(170,255,220,0.2)] active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-3"
       >
-        <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-          {isSaving ? 'hourglass_empty' : 'save'}
-        </span>
+        {isSaving ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
         {isSaving ? 'Guardando...' : 'Guardar registro'}
       </button>
     </main>

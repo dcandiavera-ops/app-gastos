@@ -1,3 +1,4 @@
+import { ChartPie } from 'lucide-react';
 import { formatClp, startOfCurrentMonth } from '@/lib/money';
 import { requireAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -71,7 +72,7 @@ export default async function Budget() {
       <div className="glass-panel p-8 rounded-[2rem] border border-outline-variant/20 shadow-lg relative overflow-hidden mb-8">
         <div className="absolute -top-10 -right-10 w-48 h-48 wealth-orb opacity-40"></div>
         <h2 className="text-xl font-bold mb-8 relative z-10 text-on-surface flex items-center gap-3">
-          <span className="material-symbols-outlined text-primary text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>pie_chart</span>
+          <ChartPie className="h-8 w-8 text-primary" />
           Estado real de tus gastos
         </h2>
 

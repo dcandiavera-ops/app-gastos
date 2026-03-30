@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CircleAlert, CircleCheck, CirclePlus, Inbox, List, ReceiptText, TriangleAlert } from 'lucide-react';
 import { requireAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { formatClp, startOfCurrentMonth } from '@/lib/money';
@@ -44,23 +45,23 @@ export default async function Dashboard() {
 
   let alertMessage = '';
   let alertColor = '';
-  let alertIcon = '';
+  let AlertIcon = CircleCheck;
   let progressBarColor = '';
 
   if (actualSpent > budget) {
     alertMessage = `Atencion: superaste tu presupuesto mensual por $${formatClp(actualSpent - budget)} CLP.`;
     alertColor = 'text-error';
-    alertIcon = 'warning';
+    AlertIcon = TriangleAlert;
     progressBarColor = 'bg-error shadow-[0_0_25px_rgba(255,180,171,0.6)]';
   } else if (rawPercentage >= 80) {
     alertMessage = `Cuidado: estas cerca del limite. Te quedan $${formatClp(remaining)} CLP disponibles.`;
     alertColor = 'text-yellow-400';
-    alertIcon = 'error_outline';
+    AlertIcon = CircleAlert;
     progressBarColor = 'bg-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.6)]';
   } else {
     alertMessage = `Buen trabajo: estas dentro del presupuesto. Te quedan $${formatClp(remaining)} CLP disponibles.`;
     alertColor = 'text-primary';
-    alertIcon = 'check_circle';
+    AlertIcon = CircleCheck;
     progressBarColor = 'bg-primary shadow-[0_0_25px_rgba(170,255,220,0.6)]';
   }
 
@@ -100,7 +101,7 @@ export default async function Dashboard() {
 
           <div className="flex justify-center mt-6">
             <div className={`inline-flex items-center gap-4 px-6 py-4 rounded-2xl bg-surface-container-highest/60 border border-outline-variant/20 backdrop-blur-lg shadow-xl ${alertColor}`}>
-              <span className="material-symbols-outlined text-3xl animate-bounce" style={{ fontVariationSettings: "'FILL' 1" }}>{alertIcon}</span>
+              <AlertIcon className="h-8 w-8 animate-bounce" />
               <p className="font-black text-sm md:text-base tracking-wide text-left">{alertMessage}</p>
             </div>
           </div>
@@ -126,7 +127,7 @@ export default async function Dashboard() {
         <div className="flex justify-between items-center mb-8 px-2">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-              <span className="material-symbols-outlined text-[24px]">list_alt</span>
+              <List className="h-6 w-6" />
             </div>
             <div>
               <h3 className="text-2xl font-black tracking-tight text-on-surface">Desglose de movimientos</h3>
@@ -146,9 +147,7 @@ export default async function Dashboard() {
             <div key={tx.id} className="flex items-center justify-between p-5 rounded-2xl hover:bg-surface-bright/50 border border-transparent hover:border-outline-variant/30 transition-all group backdrop-blur-md">
               <div className="flex items-center gap-5">
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-inner ${tx.type === 'INCOME' ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-surface-container-highest/80 text-on-surface/60 border border-outline-variant/30 group-hover:bg-primary/10 group-hover:border-primary/30 group-hover:text-primary/90'}`}>
-                  <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    {tx.type === 'INCOME' ? 'add_circle' : 'receipt_long'}
-                  </span>
+                  {tx.type === 'INCOME' ? <CirclePlus className="h-7 w-7" /> : <ReceiptText className="h-7 w-7" />}
                 </div>
                 <div>
                   <p className="font-extrabold text-[17px] text-on-surface tracking-tight group-hover:text-primary transition-colors">{tx.description || 'Movimiento'}</p>
@@ -166,7 +165,7 @@ export default async function Dashboard() {
             </div>
           )) : (
             <div className="py-14 flex flex-col items-center justify-center opacity-60 bg-surface-container-highest/30 rounded-3xl border border-dashed border-outline-variant/30">
-              <span className="material-symbols-outlined text-[64px] mb-4 text-on-surface/30">inbox</span>
+              <Inbox className="mb-4 h-16 w-16 text-on-surface/30" />
               <p className="text-sm font-bold tracking-widest uppercase text-on-surface/50">Aun no hay gastos registrados.</p>
               <p className="text-xs text-on-surface/40 mt-2 max-w-sm text-center">Tus registros manuales o boletas procesadas por OCR apareceran aqui.</p>
             </div>
