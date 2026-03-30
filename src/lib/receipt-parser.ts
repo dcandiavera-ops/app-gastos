@@ -193,6 +193,10 @@ function isTaxAmountLine(line: string) {
   return /\b(iva|impuesto|vat|tax)\b/.test(line);
 }
 
+function isReferenceLine(line: string) {
+  return /(rut|aprobacion|autorizacion|comprobante|operacion|terminal|aid|tarjeta|vendedor|copia comercio|version|v\.\d)/.test(line);
+}
+
 function isAmountOnlyLine(line: string) {
   const normalized = line.trim();
   return /^\$?\s*\d(?:[\d.,\s]{1,}\d)?$/.test(normalized);
@@ -340,6 +344,10 @@ function extractAmount(lines: string[]) {
         score -= 40;
       }
 
+      if (isReferenceLine(lower)) {
+        score -= 140;
+      }
+
       if (isSubtotalLine(lower) && !isTotalLine) {
         score -= 10;
       }
@@ -393,7 +401,19 @@ function extractAmount(lines: string[]) {
   }
 
   if (totalAmounts.length) {
-    return totalAmounts.sort((a, b) => b - a)[0];
+    totalAmounts.sort((a, b) => a - b);
+    if (totalAmounts.length >= 2 && totalAmounts[0] === totalAmounts[1]) {
+      return totalAmounts[0];
+    }
+
+    return totalAmounts[totalAmounts.length - 1];
+  }
+
+  if (subtotalAmounts.length && totalAmounts.length === 0) {
+    subtotalAmounts.sort((a, b) => a - b);
+    if (subtotalAmounts.length >= 2 && subtotalAmounts[0] === subtotalAmounts[1]) {
+      return subtotalAmounts[0];
+    }
   }
 
   if (subtotalAmounts.length && ivaAmounts.length) {
