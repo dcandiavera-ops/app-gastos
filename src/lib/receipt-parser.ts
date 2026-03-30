@@ -142,6 +142,22 @@ function findNearbyAmount(lines: string[], startIndex: number) {
   return null;
 }
 
+function fuzzyIncludesTotal(line: string) {
+  return /\b(total|tota[l1i\]]?|totai|tota1|toial|a pagar|importe total|monto total|saldo)\b/.test(line);
+}
+
+function isPaymentLine(line: string) {
+  return /(efectivo|debito|credito|master|visa|redcompra|transbank|forma de pago|vuelto|cambio)/.test(line);
+}
+
+function isSubtotalLine(line: string) {
+  return /(^|\s)(compra|subtotal|neto|afecto)(\s|$)/.test(line);
+}
+
+function isTaxAmountLine(line: string) {
+  return /\b(iva|impuesto|vat|tax)\b/.test(line);
+}
+
 function looksLikeRutToken(token: string) {
   const compact = token.replace(/\s+/g, '');
 
@@ -160,17 +176,18 @@ function lineLooksLikeLocationOrMetadata(line: string) {
 
 function extractAmount(lines: string[]) {
   const rankedMatches: Array<{ value: number; score: number }> = [];
-  let subtotalAmount: number | null = null;
-  let ivaAmount: number | null = null;
-  let totalAmount: number | null = null;
+  const subtotalAmounts: number[] = [];
+  const ivaAmounts: number[] = [];
+  const totalAmounts: number[] = [];
   let totalLineIndex = -1;
 
   for (const [index, line] of lines.entries()) {
     const numbers = line.match(/\$?\s*\d[\d.,]{2,}/g) ?? [];
     const lower = normalizeText(line);
     const lineBias = Math.max(0, lines.length - index);
-    const isTotalLine = /(total|monto total|total a pagar|importe|saldo|total tarjeta|total \$)/.test(lower);
-    const isTaxLine = /(subtotal|neto|iva|vuelto|propina)/.test(lower);
+    const isTotalLine = fuzzyIncludesTotal(lower);
+    const isTaxLine = /(subtotal|neto|iva|vuelto|propina|impuesto)/.test(lower);
+    const lineAmount = extractLineAmount(line);
 
     if (
       /(rut|rol unico tributario|folio|cajero|caja|cliente|tarjeta|transbank|autorizacion|operacion|terminal)/.test(lower)
@@ -178,17 +195,20 @@ function extractAmount(lines: string[]) {
       continue;
     }
 
-    if (/(^|\s)(compra|subtotal|neto)(\s|$)/.test(lower)) {
-      subtotalAmount = extractLineAmount(line);
+    if (isSubtotalLine(lower) && lineAmount !== null) {
+      subtotalAmounts.push(lineAmount);
     }
 
-    if (/\biva\b/.test(lower)) {
-      ivaAmount = extractLineAmount(line);
+    if (isTaxAmountLine(lower) && lineAmount !== null) {
+      ivaAmounts.push(lineAmount);
     }
 
     if (isTotalLine) {
       totalLineIndex = index;
-      totalAmount = extractLineAmount(line) ?? findNearbyAmount(lines, index + 1);
+      const nearbyAmount = lineAmount ?? findNearbyAmount(lines, index + 1);
+      if (nearbyAmount !== null) {
+        totalAmounts.push(nearbyAmount);
+      }
     }
 
     for (const token of numbers) {
@@ -207,11 +227,19 @@ function extractAmount(lines: string[]) {
         score -= 25;
       }
 
-       if (
+      if (
         /(descripcion|detalle|kg|pza|pzq|unidad|cant|cantidad|x\s*\d|^\d+[.,]\d+\s+\d{2,})/.test(lower) ||
         numbers.length >= 3
       ) {
         score -= 45;
+      }
+
+      if (isPaymentLine(lower) && !isTotalLine) {
+        score -= 40;
+      }
+
+      if (isSubtotalLine(lower) && !isTotalLine) {
+        score -= 10;
       }
 
       if (looksLikeRutToken(token)) {
@@ -262,13 +290,16 @@ function extractAmount(lines: string[]) {
     }
   }
 
-  if (totalAmount !== null) {
-    return totalAmount;
+  if (totalAmounts.length) {
+    return totalAmounts.sort((a, b) => b - a)[0];
   }
 
-  if (subtotalAmount !== null && ivaAmount !== null) {
-    const computedTotal = Math.round(subtotalAmount + ivaAmount);
-    return computedTotal;
+  if (subtotalAmounts.length && ivaAmounts.length) {
+    const bestComputedTotal = Math.round(Math.max(...subtotalAmounts) + Math.max(...ivaAmounts));
+
+    if (bestComputedTotal > 0) {
+      return bestComputedTotal;
+    }
   }
 
   rankedMatches.sort((a, b) => b.score - a.score || b.value - a.value);
