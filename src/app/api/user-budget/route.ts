@@ -19,9 +19,25 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Invalid monthly budget' }, { status: 400 });
     }
 
-    const updatedUser = await prisma.user.update({
+    const updatedUser = await prisma.user.upsert({
       where: { id: user.id },
-      data: { monthlyBudget: parsedBudget },
+      update: {
+        email: user.email ?? `${user.id}@placeholder.invalid`,
+        name:
+          typeof user.user_metadata?.name === 'string' && user.user_metadata.name.trim().length > 0
+            ? user.user_metadata.name.trim()
+            : null,
+        monthlyBudget: parsedBudget,
+      },
+      create: {
+        id: user.id,
+        email: user.email ?? `${user.id}@placeholder.invalid`,
+        name:
+          typeof user.user_metadata?.name === 'string' && user.user_metadata.name.trim().length > 0
+            ? user.user_metadata.name.trim()
+            : null,
+        monthlyBudget: parsedBudget,
+      },
       select: { monthlyBudget: true },
     });
 
