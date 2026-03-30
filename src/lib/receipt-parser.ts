@@ -195,7 +195,7 @@ function fuzzyIncludesTotal(line: string) {
 }
 
 function isPaymentLine(line: string) {
-  return /(efectivo|debito|credito|master|visa|redcompra|transbank|forma de pago|vuelto|cambio)/.test(line);
+  return /(efectivo|debito|credito|master|visa|redcompra|transbank|forma de pago|vuelto|vuelta|uuelta|cambio)/.test(line);
 }
 
 function isSubtotalLine(line: string) {
@@ -207,7 +207,7 @@ function isTaxAmountLine(line: string) {
 }
 
 function isReferenceLine(line: string) {
-  return /(rut|aprobacion|autorizacion|comprobante|operacion|terminal|aid|tarjeta|vendedor|copia comercio|version|v\.\d)/.test(line);
+  return /(rut|aprobacion|autorizacion|comprobante|operacion|terminal|aid|tarjeta|vendedor|copia comercio|version|v\.\d|ticket|bal\.:?)/.test(line);
 }
 
 function isAmountOnlyLine(line: string) {
@@ -316,7 +316,7 @@ function detectReceiptKind(lines: string[]): ReceiptKind {
 
   if (
     normalizedLines.some((line) => /(descripcion|kg\(pza\)|plu)/.test(line)) &&
-    normalizedLines.some((line) => /(efectivo|vuelto|vuelta)/.test(line))
+    normalizedLines.some((line) => /(efectivo|vuelto|vuelta|uuelta|ticket|bal\.:?)/.test(line))
   ) {
     return 'weighted_items';
   }
@@ -338,6 +338,28 @@ function extractWeightedReceiptAmount(lines: string[]) {
     return repeatedBottomAmount;
   }
 
+  const trailingAmounts = lines
+    .slice(Math.max(0, lines.length - 10))
+    .map((line) => extractLineAmount(line))
+    .filter((value): value is number => value !== null && value > 0)
+    .filter((value) => value >= 100);
+
+  if (trailingAmounts.length >= 3) {
+    const counts = new Map<number, number>();
+    for (const value of trailingAmounts) {
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+
+    const repeatedTrailing = [...counts.entries()]
+      .filter(([, count]) => count >= 2)
+      .map(([value]) => value)
+      .sort((a, b) => b - a);
+
+    if (repeatedTrailing.length > 0) {
+      return repeatedTrailing[0];
+    }
+  }
+
   return extractAmount(lines);
 }
 
@@ -355,8 +377,9 @@ function extractRepeatedBottomAmount(lines: string[]) {
   const tailLines = lines.slice(tailStart);
   const normalizedTail = tailLines.map((line) => normalizeText(line));
 
-  const hasPaymentSummary = normalizedTail.some((line) => fuzzyIncludesTotal(line)) &&
-    normalizedTail.some((line) => /(efectivo|vuelto|vuelta)/.test(line));
+  const hasPaymentSummary =
+    normalizedTail.some((line) => fuzzyIncludesTotal(line)) &&
+    normalizedTail.some((line) => /(efectivo|vuelto|vuelta|uuelta)/.test(line));
 
   if (!hasPaymentSummary) {
     return null;
@@ -365,6 +388,11 @@ function extractRepeatedBottomAmount(lines: string[]) {
   const counts = new Map<number, number>();
 
   for (const line of tailLines) {
+    const lower = normalizeText(line);
+    if (isReferenceLine(lower)) {
+      continue;
+    }
+
     const amount = extractLineAmount(line);
     if (amount === null || amount <= 0) {
       continue;
