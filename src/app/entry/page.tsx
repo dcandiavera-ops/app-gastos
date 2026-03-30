@@ -1,15 +1,73 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Delete, HandCoins, LoaderCircle, Save, Store, Wallet } from 'lucide-react';
+
+type Category = {
+  id: string;
+  name: string;
+  color: string;
+};
 
 export default function ManualEntry() {
   const router = useRouter();
   const [amount, setAmount] = useState('0');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadCategories = async () => {
+      try {
+        const response = await fetch('/api/categories');
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json()) as Category[];
+        if (ignore) {
+          return;
+        }
+
+        setCategories(payload);
+
+        const fallbackCategory = payload.find((category) => category.name.toLowerCase() === 'imprevistos');
+        if (fallbackCategory) {
+          setSelectedCategoryId((currentValue) => currentValue ?? fallbackCategory.id);
+        }
+      } catch (loadError) {
+        console.error(loadError);
+      }
+    };
+
+    loadCategories();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (type === 'INCOME') {
+      setSelectedCategoryId(null);
+      return;
+    }
+
+    if (selectedCategoryId) {
+      return;
+    }
+
+    const fallbackCategory = categories.find((category) => category.name.toLowerCase() === 'imprevistos');
+    if (fallbackCategory) {
+      setSelectedCategoryId(fallbackCategory.id);
+    }
+  }, [categories, selectedCategoryId, type]);
 
   const handleNumpadClick = (value: string) => {
     if (value === 'backspace') {
@@ -29,6 +87,7 @@ export default function ManualEntry() {
 
   const handleSave = async () => {
     setIsSaving(true);
+    setError('');
 
     try {
       const response = await fetch('/api/transactions', {
@@ -39,15 +98,21 @@ export default function ManualEntry() {
           description: description || (type === 'EXPENSE' ? 'Gasto manual' : 'Ingreso manual'),
           type,
           date: new Date().toISOString(),
+          categoryId: type === 'EXPENSE' ? selectedCategoryId : null,
         }),
       });
 
       if (response.ok) {
         router.push('/history');
         router.refresh();
+        return;
       }
+
+      const payload = await response.json();
+      setError(payload.error || 'No se pudo guardar el movimiento.');
     } catch (error) {
       console.error(error);
+      setError('No se pudo guardar el movimiento.');
     } finally {
       setIsSaving(false);
     }
@@ -97,6 +162,37 @@ export default function ManualEntry() {
               Ingreso
             </button>
           </div>
+          {type === 'EXPENSE' ? (
+            <div className="space-y-3">
+              <p className="text-[10px] text-center uppercase tracking-[0.2em] text-on-surface/40 font-bold">
+                Categoria del gasto
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {categories.map((category) => {
+                  const isSelected = selectedCategoryId === category.id;
+
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategoryId(category.id)}
+                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all ${
+                        isSelected
+                          ? 'border-primary/40 bg-primary/15 text-primary'
+                          : 'border-outline-variant/20 bg-surface-container-high text-on-surface/70'
+                      }`}
+                      type="button"
+                    >
+                      <span
+                        className="h-2.5 w-2.5 rounded-full border border-white/10"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      {category.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -120,6 +216,8 @@ export default function ManualEntry() {
         {isSaving ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
         {isSaving ? 'Guardando...' : 'Guardar registro'}
       </button>
+
+      {error ? <p className="mt-4 text-center text-sm text-error">{error}</p> : null}
     </main>
   );
 }
