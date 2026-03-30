@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Camera, LoaderCircle, ReceiptText, Save, Upload } from 'lucide-react';
 
@@ -18,6 +18,80 @@ type ScannedReceipt = {
   } | null;
 };
 
+const OCR_MAX_FILE_SIZE_BYTES = 1024 * 1024;
+const MIN_COMPRESSED_DIMENSION = 1400;
+
+async function loadImageElement(file: File) {
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('No se pudo abrir la imagen'));
+      img.src = objectUrl;
+    });
+
+    return image;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function canvasToFile(canvas: HTMLCanvasElement, quality: number, fileName: string) {
+  const blob = await new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, 'image/jpeg', quality);
+  });
+
+  if (!blob) {
+    throw new Error('No se pudo comprimir la imagen');
+  }
+
+  return new File([blob], fileName.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+}
+
+async function optimizeReceiptImage(file: File) {
+  if (file.size <= OCR_MAX_FILE_SIZE_BYTES) {
+    return file;
+  }
+
+  const image = await loadImageElement(file);
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+
+  if (!context) {
+    throw new Error('No se pudo preparar la compresion de la imagen');
+  }
+
+  const longestSide = Math.max(image.width, image.height);
+  const scale = longestSide > 2200 ? 2200 / longestSide : 1;
+  let width = Math.max(1, Math.round(image.width * scale));
+  let height = Math.max(1, Math.round(image.height * scale));
+  let quality = 0.9;
+
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    canvas.width = width;
+    canvas.height = height;
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+
+    const compressedFile = await canvasToFile(canvas, quality, file.name);
+    if (compressedFile.size <= OCR_MAX_FILE_SIZE_BYTES) {
+      return compressedFile;
+    }
+
+    quality -= 0.12;
+
+    if (quality < 0.5) {
+      quality = 0.82;
+      width = Math.max(MIN_COMPRESSED_DIMENSION, Math.round(width * 0.82));
+      height = Math.max(MIN_COMPRESSED_DIMENSION, Math.round(height * 0.82));
+    }
+  }
+
+  return null;
+}
+
 export default function Scanner() {
   const router = useRouter();
   const [isScanning, setIsScanning] = useState(false);
@@ -25,6 +99,14 @@ export default function Scanner() {
   const [error, setError] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [receipt, setReceipt] = useState<ScannedReceipt | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const confidenceLabel = useMemo(() => {
     if (!receipt) {
@@ -48,13 +130,26 @@ export default function Scanner() {
 
     setError('');
     setReceipt(null);
-    setPreviewUrl(URL.createObjectURL(file));
-    setIsScanning(true);
-
-    const formData = new FormData();
-    formData.append('file', file);
 
     try {
+      const optimizedFile = await optimizeReceiptImage(file);
+
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+
+      setPreviewUrl(URL.createObjectURL(optimizedFile ?? file));
+
+      if (!optimizedFile) {
+        setError('La imagen sigue superando 1 MB incluso despues de comprimirla. Sube una foto mas liviana o recortada.');
+        return;
+      }
+
+      setIsScanning(true);
+
+      const formData = new FormData();
+      formData.append('file', optimizedFile);
+
       const response = await fetch('/api/scan-receipt', {
         method: 'POST',
         body: formData,
@@ -73,7 +168,7 @@ export default function Scanner() {
       setReceipt(payload.receipt);
     } catch (scanError) {
       console.error(scanError);
-      setError('Fallo el escaneo de la boleta');
+      setError('No se pudo preparar o escanear la boleta. Intenta con otra foto mas clara.');
     } finally {
       setIsScanning(false);
       event.target.value = '';
@@ -127,6 +222,7 @@ export default function Scanner() {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tighter text-on-surface">Escaner web</h1>
           <p className="text-sm text-on-surface/60 font-medium mt-1">Sube una boleta y extrae monto, fecha y comercio con OCR gratuito</p>
+          <p className="text-xs text-on-surface/40 font-medium mt-2">La imagen se comprime automaticamente si supera 1 MB para que el OCR pueda procesarla.</p>
         </div>
       </div>
 
