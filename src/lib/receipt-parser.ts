@@ -229,6 +229,58 @@ function lineLooksLikeLocationOrMetadata(line: string) {
   );
 }
 
+function isGetnetReceipt(lines: string[]) {
+  return lines.some((line) => /\bgetnet\b/.test(normalizeText(line)));
+}
+
+function extractGetnetAmount(lines: string[]) {
+  for (const [index, rawLine] of lines.entries()) {
+    const lower = normalizeText(rawLine);
+
+    if (!/\bmonto\b/.test(lower) && !fuzzyIncludesTotal(lower)) {
+      continue;
+    }
+
+    const inlineAmount = extractLineAmount(rawLine);
+    if (inlineAmount !== null) {
+      return inlineAmount;
+    }
+
+    const nextAmount = findLabeledAmount(lines, index + 1, 2);
+    if (nextAmount !== null) {
+      return nextAmount;
+    }
+  }
+
+  return null;
+}
+
+function extractGetnetMerchant(lines: string[]) {
+  for (const rawLine of lines) {
+    const line = normalizeLine(rawLine);
+    const lower = normalizeText(line);
+
+    if (
+      line.length < 4 ||
+      /\bgetnet\b/.test(lower) ||
+      MERCHANT_BLOCKLIST.some((word) => lower.includes(word)) ||
+      isReferenceLine(lower) ||
+      isPaymentLine(lower) ||
+      lineLooksLikeLocationOrMetadata(lower)
+    ) {
+      continue;
+    }
+
+    if (!/[a-zA-Z]/.test(line)) {
+      continue;
+    }
+
+    return line;
+  }
+
+  return 'GETNET';
+}
+
 function extractAmount(lines: string[]) {
   const rankedMatches: Array<{ value: number; score: number }> = [];
   const subtotalAmounts: number[] = [];
@@ -543,8 +595,9 @@ export function parseReceiptText(rawText: string): ParsedReceipt {
     .map(normalizeLine)
     .filter(Boolean);
 
-  const merchant = extractMerchant(lines);
-  const amount = extractAmount(lines);
+  const getnetReceipt = isGetnetReceipt(lines);
+  const merchant = getnetReceipt ? extractGetnetMerchant(lines) : extractMerchant(lines);
+  const amount = getnetReceipt ? extractGetnetAmount(lines) ?? extractAmount(lines) : extractAmount(lines);
   const date = extractDate(rawText);
   const suggestedCategory = suggestCategory(merchant, rawText);
 
