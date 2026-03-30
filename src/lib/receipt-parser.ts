@@ -110,13 +110,17 @@ function normalizeLine(line: string) {
 }
 
 function parseAmountToken(token: string) {
-  const normalized = token.replace(/[^\d,.-]/g, '').replace(/\.(?=\d{3}\b)/g, '').replace(',', '.');
+  const normalized = token
+    .replace(/\s+/g, '')
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\.(?=\d{3}\b)/g, '')
+    .replace(',', '.');
   const value = Number(normalized);
   return Number.isFinite(value) ? value : null;
 }
 
 function extractLineAmount(line: string) {
-  const numbers = line.match(/\$?\s*\d[\d.,]{2,}/g) ?? [];
+  const numbers = line.match(/\$?\s*\d(?:[\d.,\s]{1,}\d)?/g) ?? [];
 
   if (!numbers.length) {
     return null;
@@ -182,7 +186,7 @@ function extractAmount(lines: string[]) {
   let totalLineIndex = -1;
 
   for (const [index, line] of lines.entries()) {
-    const numbers = line.match(/\$?\s*\d[\d.,]{2,}/g) ?? [];
+    const numbers = line.match(/\$?\s*\d(?:[\d.,\s]{1,}\d)?/g) ?? [];
     const lower = normalizeText(line);
     const lineBias = Math.max(0, lines.length - index);
     const isTotalLine = fuzzyIncludesTotal(lower);
