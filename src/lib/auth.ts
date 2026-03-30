@@ -30,12 +30,17 @@ export async function ensureDbUser(user: SupabaseUser) {
 }
 
 export async function getOptionalAuthUser() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  return user;
+    return user;
+  } catch (error) {
+    console.error('Auth getOptionalAuthUser error:', error);
+    return null;
+  }
 }
 
 export async function requireAuthUser() {

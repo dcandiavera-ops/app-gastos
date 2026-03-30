@@ -3,6 +3,8 @@ import './globals.css';
 import TopAppBar from '@/components/TopAppBar';
 import BottomNavBar from '@/components/BottomNavBar';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'Gastos Personales',
   description: 'Gestor personal de gastos y boletas',
