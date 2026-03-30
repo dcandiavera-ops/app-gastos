@@ -14,6 +14,7 @@ type OcrResponse = {
 };
 
 type OcrAttemptConfig = {
+  name: string;
   isTable: 'true' | 'false';
   ocrEngine: '2' | '3';
   detectOrientation?: 'true';
@@ -57,9 +58,45 @@ async function runOcrAttempt(file: File, apiKey: string, config: OcrAttemptConfi
     payload.ParsedResults?.map((item) => item.ParsedText?.trim() || '').filter(Boolean).join('\n\n') || '';
 
   return {
+    config,
     payload,
     parsedText,
   };
+}
+
+function scoreReceiptCandidate(parsedText: string, receipt: ReturnType<typeof parseReceiptText>) {
+  let score = 0;
+  const normalized = parsedText.toLowerCase();
+
+  if (receipt.amount !== null) {
+    score += 40;
+  }
+
+  if (receipt.date) {
+    score += 20;
+  }
+
+  if (receipt.confidence === 'high') {
+    score += 30;
+  } else if (receipt.confidence === 'medium') {
+    score += 15;
+  }
+
+  if (/(total|tota1|tota\]|totai|toial)/.test(normalized)) {
+    score += 20;
+  }
+
+  if (/\biva\b/.test(normalized)) {
+    score += 10;
+  }
+
+  if (/\b(compra|subtotal|neto)\b/.test(normalized)) {
+    score += 10;
+  }
+
+  score += Math.min(parsedText.length / 40, 20);
+
+  return score;
 }
 
 export async function POST(request: Request) {
@@ -77,24 +114,42 @@ export async function POST(request: Request) {
 
     const apiKey = process.env.OCR_SPACE_API_KEY || 'helloworld';
     const attempts: OcrAttemptConfig[] = [
-      { isTable: 'true', ocrEngine: '3' },
-      { isTable: 'false', ocrEngine: '2', detectOrientation: 'true' },
+      { name: 'table-engine-3', isTable: 'true', ocrEngine: '3' },
+      { name: 'plain-engine-2', isTable: 'false', ocrEngine: '2', detectOrientation: 'true' },
     ];
 
-    let parsedText = '';
+    let bestCandidate:
+      | {
+          parsedText: string;
+          receipt: ReturnType<typeof parseReceiptText>;
+          score: number;
+          configName: string;
+        }
+      | null = null;
     let lastPayload: OcrResponse | null = null;
 
     for (const attempt of attempts) {
       const result = await runOcrAttempt(file, apiKey, attempt);
       lastPayload = result.payload;
 
-      if (result.parsedText) {
-        parsedText = result.parsedText;
-        break;
+      if (!result.parsedText) {
+        continue;
+      }
+
+      const receipt = parseReceiptText(result.parsedText);
+      const score = scoreReceiptCandidate(result.parsedText, receipt);
+
+      if (!bestCandidate || score > bestCandidate.score) {
+        bestCandidate = {
+          parsedText: result.parsedText,
+          receipt,
+          score,
+          configName: result.config.name,
+        };
       }
     }
 
-    if (!parsedText) {
+    if (!bestCandidate) {
       const providerError = lastPayload ? getProviderError(lastPayload) : null;
 
       return NextResponse.json(
@@ -110,8 +165,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      receipt: parseReceiptText(parsedText),
+      receipt: bestCandidate.receipt,
       provider: {
+        selectedAttempt: bestCandidate.configName,
         usedFallbackKey: !process.env.OCR_SPACE_API_KEY,
       },
     });
