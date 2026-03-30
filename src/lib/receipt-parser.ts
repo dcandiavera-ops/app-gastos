@@ -159,22 +159,33 @@ function findNearbyAmount(lines: string[], startIndex: number) {
   return null;
 }
 
-function findNearbyAmounts(lines: string[], startIndex: number, maxOffset = 4) {
-  const values: number[] = [];
-
+function findLabeledAmount(lines: string[], startIndex: number, maxOffset = 3) {
   for (let offset = 0; offset <= maxOffset; offset += 1) {
     const candidateLine = lines[startIndex + offset];
     if (!candidateLine) {
       continue;
     }
 
+    const lower = normalizeText(candidateLine);
+
+    if (
+      offset > 0 &&
+      (fuzzyIncludesTotal(lower) ||
+        isSubtotalLine(lower) ||
+        isTaxAmountLine(lower) ||
+        isReferenceLine(lower) ||
+        isPaymentLine(lower))
+    ) {
+      break;
+    }
+
     const amount = extractLineAmount(candidateLine);
     if (amount !== null) {
-      values.push(amount);
+      return amount;
     }
   }
 
-  return values;
+  return null;
 }
 
 function fuzzyIncludesTotal(line: string) {
@@ -307,11 +318,7 @@ function extractAmount(lines: string[]) {
 
     if (isTotalLine) {
       totalLineIndex = index;
-      const nearbyCandidates = lineAmount !== null ? [lineAmount] : findNearbyAmounts(lines, index + 1);
-      const nearbyAmount =
-        nearbyCandidates.length > 0
-          ? nearbyCandidates.sort((a, b) => b - a)[0]
-          : findNearbyAmount(lines, index + 1);
+      const nearbyAmount = lineAmount ?? findLabeledAmount(lines, index + 1) ?? findNearbyAmount(lines, index + 1);
       if (nearbyAmount !== null) {
         totalAmounts.push(nearbyAmount);
       }
