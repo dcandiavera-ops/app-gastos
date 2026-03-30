@@ -11,7 +11,7 @@ function getDisplayName(user: SupabaseUser) {
 async function syncUser(user: SupabaseUser) {
   const email = user.email ?? `${user.id}@placeholder.invalid`;
 
-  await prisma.user.upsert({
+  return prisma.user.upsert({
     where: { id: user.id },
     update: {
       email,
@@ -23,6 +23,10 @@ async function syncUser(user: SupabaseUser) {
       name: getDisplayName(user),
     },
   });
+}
+
+export async function ensureDbUser(user: SupabaseUser) {
+  return syncUser(user);
 }
 
 export async function getOptionalAuthUser() {
@@ -41,6 +45,6 @@ export async function requireAuthUser() {
     redirect('/auth');
   }
 
-  await syncUser(user);
+  await ensureDbUser(user);
   return user;
 }

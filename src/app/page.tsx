@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { CircleAlert, CircleCheck, CirclePlus, Inbox, List, ReceiptText, TriangleAlert } from 'lucide-react';
-import { requireAuthUser } from '@/lib/auth';
+import { ensureDbUser, requireAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { formatClp, startOfCurrentMonth } from '@/lib/money';
 import type { TransactionRecord } from '@/lib/transaction-types';
@@ -10,12 +10,9 @@ export const dynamic = 'force-dynamic';
 
 export default async function Dashboard() {
   const user = await requireAuthUser();
+  const dbUser = await ensureDbUser(user);
   const monthStart = startOfCurrentMonth();
-  const [appUser, recentTransactions, monthlyExpenseAggregate, monthlyIncomeAggregate] = await Promise.all([
-    prisma.user.findUniqueOrThrow({
-      where: { id: user.id },
-      select: { monthlyBudget: true },
-    }),
+  const [recentTransactions, monthlyExpenseAggregate, monthlyIncomeAggregate] = await Promise.all([
     prisma.transaction.findMany({
       where: {
         userId: user.id,
@@ -43,7 +40,7 @@ export default async function Dashboard() {
 
   const actualSpent = monthlyExpenseAggregate._sum.amount ?? 0;
   const actualIncome = monthlyIncomeAggregate._sum.amount ?? 0;
-  const budget = appUser.monthlyBudget;
+  const budget = dbUser.monthlyBudget;
   const rawPercentage = budget > 0 ? (actualSpent / budget) * 100 : 0;
   const percentage = Math.min(rawPercentage, 100);
   const remaining = budget - actualSpent;
