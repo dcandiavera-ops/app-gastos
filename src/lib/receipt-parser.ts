@@ -126,6 +126,22 @@ function extractLineAmount(line: string) {
   return parseAmountToken(lastToken);
 }
 
+function findNearbyAmount(lines: string[], startIndex: number) {
+  for (let offset = 0; offset <= 2; offset += 1) {
+    const candidateLine = lines[startIndex + offset];
+    if (!candidateLine) {
+      continue;
+    }
+
+    const amount = extractLineAmount(candidateLine);
+    if (amount !== null) {
+      return amount;
+    }
+  }
+
+  return null;
+}
+
 function looksLikeRutToken(token: string) {
   const compact = token.replace(/\s+/g, '');
 
@@ -147,6 +163,7 @@ function extractAmount(lines: string[]) {
   let subtotalAmount: number | null = null;
   let ivaAmount: number | null = null;
   let totalAmount: number | null = null;
+  let totalLineIndex = -1;
 
   for (const [index, line] of lines.entries()) {
     const numbers = line.match(/\$?\s*\d[\d.,]{2,}/g) ?? [];
@@ -170,7 +187,8 @@ function extractAmount(lines: string[]) {
     }
 
     if (isTotalLine) {
-      totalAmount = extractLineAmount(line);
+      totalLineIndex = index;
+      totalAmount = extractLineAmount(line) ?? findNearbyAmount(lines, index + 1);
     }
 
     for (const token of numbers) {
@@ -187,6 +205,13 @@ function extractAmount(lines: string[]) {
 
       if (isTaxLine) {
         score -= 25;
+      }
+
+       if (
+        /(descripcion|detalle|kg|pza|pzq|unidad|cant|cantidad|x\s*\d|^\d+[.,]\d+\s+\d{2,})/.test(lower) ||
+        numbers.length >= 3
+      ) {
+        score -= 45;
       }
 
       if (looksLikeRutToken(token)) {
@@ -211,6 +236,14 @@ function extractAmount(lines: string[]) {
 
       if (index <= 2 && !isTotalLine) {
         score -= 20;
+      }
+
+      if (totalLineIndex >= 0 && Math.abs(index - totalLineIndex) <= 2) {
+        score += 35;
+      }
+
+      if (totalLineIndex >= 0 && index < totalLineIndex - 1) {
+        score -= 15;
       }
 
       if (value > 1000) {
