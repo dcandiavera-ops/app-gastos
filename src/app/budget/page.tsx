@@ -1,6 +1,6 @@
 import { ChartPie } from 'lucide-react';
 import TransactionsEditorList from '@/components/TransactionsEditorList';
-import { formatClp, startOfCurrentMonth } from '@/lib/money';
+import { formatClp, startOfCurrentMonth, getMonthLabelDate } from '@/lib/money';
 import { requireAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
@@ -54,7 +54,7 @@ export default async function Budget() {
   const totalExpense = expenses._sum.amount ?? 0;
   const totalIncome = income._sum.amount ?? 0;
   const net = totalIncome - totalExpense;
-  const monthLabel = new Intl.DateTimeFormat('es-CL', { month: 'long', year: 'numeric' }).format(new Date());
+  const monthLabel = new Intl.DateTimeFormat('es-CL', { month: 'long', year: 'numeric' }).format(getMonthLabelDate());
   const categorySummaries = categories
     .map((category) => ({
       id: category.id,
