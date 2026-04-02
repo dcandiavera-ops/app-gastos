@@ -172,10 +172,10 @@
     font-family: "Boldonse", sans-serif;
     transform-style: preserve-3d;
     
-    /* Moving beam over a static gradient */
+    /* Moving beam over a premium solid glass gradient */
     background-image: 
-        linear-gradient(-110deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%),
-        linear-gradient(180deg, var(--neon-bg-light) 0%, var(--neon-bg-dark) 100%);
+        linear-gradient(-60deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%),
+        linear-gradient(180deg, var(--neon-bg-highlight) 0%, var(--neon-bg-light) 25%, var(--neon-bg-dark) 100%);
     background-size: 200% auto, 100% 100%;
     background-repeat: no-repeat;
     -webkit-background-clip: text;
@@ -190,7 +190,7 @@
     top: 2px;
     z-index: -1;
     color: transparent;
-    background: linear-gradient(180deg, var(--neon-color-dim) 0%, var(--neon-bg-dark) 100%);
+    background: linear-gradient(180deg, var(--neon-bg-light) 0%, var(--neon-bg-dark) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-stroke: 1px var(--neon-color-dim);
@@ -215,8 +215,9 @@
     --neon-color: rgba(170, 255, 220, 1);
     --neon-color-dim: rgba(170, 255, 220, 0.4);
     --neon-color-dimmer: rgba(170, 255, 220, 0.1);
-    --neon-bg-light: #137256;
-    --neon-bg-dark: #0b1325;
+    --neon-bg-highlight: rgba(170, 255, 220, 0.9);
+    --neon-bg-light: rgba(19, 114, 86, 0.95);
+    --neon-bg-dark: rgba(11, 19, 37, 1);
     filter: drop-shadow(0 0 15px rgba(170, 255, 220, 0.3));
 }
 
@@ -224,8 +225,9 @@
     --neon-color: rgba(255, 180, 171, 1);
     --neon-color-dim: rgba(255, 180, 171, 0.4);
     --neon-color-dimmer: rgba(255, 180, 171, 0.1);
-    --neon-bg-light: #93000a;
-    --neon-bg-dark: #0b1325;
+    --neon-bg-highlight: rgba(255, 180, 171, 0.9);
+    --neon-bg-light: rgba(147, 0, 10, 0.95);
+    --neon-bg-dark: rgba(11, 19, 37, 1);
     filter: drop-shadow(0 0 15px rgba(255, 180, 171, 0.3));
 }
 

@@ -102,9 +102,9 @@ export default async function Dashboard() {
           <div className="flex flex-col items-center justify-center gap-1">
             <h2 className="text-xl font-bold text-on-surface/70 tracking-widest uppercase text-[10px]">Total gastado</h2>
             <div className={`flex items-center justify-center gap-2 mt-4 neon-3d-text-container ${actualSpent > budget ? 'error-neon' : 'primary-neon'}`}>
-              <span className="text-3xl md:text-4xl font-normal font-['Boldonse'] text-transparent" style={{ WebkitTextStroke: '1.5px var(--neon-color)' }}>$</span>
+              <span className="text-2xl md:text-3xl font-normal font-['Boldonse'] text-transparent" style={{ WebkitTextStroke: '1.5px var(--neon-color)' }}>$</span>
               <h1 
-                className="text-5xl md:text-7xl font-normal tracking-wide leading-none font-['Boldonse'] pb-2 lg:pb-3 neon-3d-text"
+                className="text-4xl md:text-6xl font-normal tracking-wide leading-none font-['Boldonse'] pb-2 lg:pb-3 neon-3d-text"
                 data-text={formatClp(actualSpent)}
               >
                 {formatClp(actualSpent)}
