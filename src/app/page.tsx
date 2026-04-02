@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { CircleAlert, CircleCheck, CirclePlus, Inbox, List, ReceiptText, TriangleAlert } from 'lucide-react';
 import { ensureDbUser, getOptionalAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { formatClp, startOfCurrentMonth } from '@/lib/money';
+import { formatClp, startOfCurrentMonth, getDaysRemainingInCycle } from '@/lib/money';
 import type { TransactionRecord } from '@/lib/transaction-types';
 import MonthlyBudgetEditor from '@/components/MonthlyBudgetEditor';
 import { redirect } from 'next/navigation';
@@ -30,6 +30,7 @@ export default async function Dashboard() {
         },
         orderBy: { date: 'desc' },
         take: 5,
+        include: { category: true },
       }),
       prisma.transaction.aggregate({
         _sum: { amount: true },
@@ -61,6 +62,9 @@ export default async function Dashboard() {
   const percentage = Math.min(rawPercentage, 100);
   const remaining = budget - actualSpent;
 
+  const daysRemaining = getDaysRemainingInCycle();
+  const daysText = daysRemaining === 1 ? '1 dia' : `${daysRemaining} dias`;
+
   let alertMessage = '';
   let alertColor = '';
   let AlertIcon = CircleCheck;
@@ -72,12 +76,12 @@ export default async function Dashboard() {
     AlertIcon = TriangleAlert;
     progressBarColor = 'bg-error shadow-[0_0_25px_rgba(255,180,171,0.6)]';
   } else if (rawPercentage >= 80) {
-    alertMessage = `Cuidado: estas cerca del limite. Te quedan $${formatClp(remaining)} CLP disponibles.`;
+    alertMessage = `Cuidado: estas cerca del limite. Te quedan $${formatClp(remaining)} CLP para los ${daysText} que faltan del mes.`;
     alertColor = 'text-yellow-400';
     AlertIcon = CircleAlert;
     progressBarColor = 'bg-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.6)]';
   } else {
-    alertMessage = `Buen trabajo: estas dentro del presupuesto. Te quedan $${formatClp(remaining)} CLP disponibles.`;
+    alertMessage = `Buen trabajo: estas dentro del presupuesto. Te quedan $${formatClp(remaining)} CLP para los ${daysText} que faltan del mes.`;
     alertColor = 'text-primary';
     AlertIcon = CircleCheck;
     progressBarColor = 'bg-primary shadow-[0_0_25px_rgba(170,255,220,0.6)]';
@@ -169,9 +173,16 @@ export default async function Dashboard() {
                 </div>
                 <div>
                   <p className="font-extrabold text-[17px] text-on-surface tracking-tight group-hover:text-primary transition-colors">{tx.description || 'Movimiento'}</p>
-                  <p className="text-[11px] text-on-surface/40 font-mono uppercase tracking-widest mt-1">
-                    {new Date(tx.date).toLocaleDateString('es-CL')}
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-[11px] text-on-surface/40 font-mono uppercase tracking-widest">
+                      {new Date(tx.date).toLocaleDateString('es-CL')}
+                    </p>
+                    {tx.category && (
+                      <span className="text-[9px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full border border-outline-variant/30 text-on-surface/60" style={{ borderColor: tx.category.color, color: tx.category.color }}>
+                        {tx.category.name}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="text-right">
