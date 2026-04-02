@@ -101,9 +101,9 @@ export default async function Dashboard() {
 
           <div className="flex flex-col items-center justify-center gap-1">
             <h2 className="text-xl font-bold text-on-surface/70 tracking-widest uppercase text-[10px]">Total gastado</h2>
-            <div className="flex items-baseline justify-center gap-1">
-              <span className="text-4xl md:text-5xl font-normal font-['Boldonse'] text-primary/80 drop-shadow-[0_0_10px_rgba(170,255,220,0.4)]">$</span>
-              <h1 className={`text-[4.5rem] md:text-[6.5rem] font-normal tracking-wide leading-tight font-['Boldonse'] text-transparent bg-clip-text pb-2 lg:pb-4 animate-glass-shine ${actualSpent > budget ? 'bg-gradient-to-r from-red-100 via-error to-red-900 drop-shadow-[0_0_20px_rgba(255,180,171,0.5)]' : 'bg-gradient-to-r from-white via-primary to-[#056c51] drop-shadow-[0_0_25px_rgba(170,255,220,0.5)]'}`}>
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              <span className={`text-3xl md:text-4xl font-normal font-['Boldonse'] ${actualSpent > budget ? 'text-error drop-shadow-[0_0_8px_rgba(255,180,171,0.5)]' : 'text-primary/90 drop-shadow-[0_0_8px_rgba(170,255,220,0.5)]'}`}>$</span>
+              <h1 className={`text-5xl md:text-7xl font-normal tracking-wide leading-none font-['Boldonse'] pb-2 lg:pb-3 ${actualSpent > budget ? 'neon-text-sweep-error' : 'neon-text-sweep'}`}>
                 {formatClp(actualSpent)}
               </h1>
             </div>
