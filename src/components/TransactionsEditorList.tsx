@@ -132,50 +132,50 @@ export default function TransactionsEditorList({
   }
 
   return (
-    <div className="fintech-card divide-y divide-outline/50 overflow-hidden">
+    <div className="space-y-3">
       {items.map((tx) => {
         const isEditing = editingId === tx.id && draft;
 
         return (
           <div
             key={tx.id}
-            className="p-4 transition-all"
+            className="habit-pill p-2 pl-4 transition-all"
           >
             {isEditing ? (
-              <div className="space-y-4">
+              <div className="space-y-4 p-2">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <input
                     value={draft.amount}
                     onChange={(event) => setDraft({ ...draft, amount: event.target.value })}
-                    className="supabase-input w-full"
+                    className="supabase-input w-full bg-white/5 border-white/10"
                     inputMode="decimal"
                     placeholder="Monto"
                   />
                   <input
                     value={draft.date}
                     onChange={(event) => setDraft({ ...draft, date: event.target.value })}
-                    className="supabase-input w-full"
+                    className="supabase-input w-full bg-white/5 border-white/10"
                     type="date"
                   />
                 </div>
                 <input
                   value={draft.description}
                   onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-                  className="supabase-input w-full"
+                  className="supabase-input w-full bg-white/5 border-white/10"
                   placeholder="Descripcion"
                 />
                 
                 <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setDraft({ ...draft, type: 'EXPENSE' })}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${draft.type === 'EXPENSE' ? 'bg-indigo-500 text-white' : 'bg-surface-variant text-on-surface-variant'}`}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${draft.type === 'EXPENSE' ? 'bg-primary text-black' : 'bg-white/5 text-on-surface-variant'}`}
                     type="button"
                   >
                     Gasto
                   </button>
                   <button
                     onClick={() => setDraft({ ...draft, type: 'INCOME', categoryId: null })}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${draft.type === 'INCOME' ? 'bg-emerald-600 text-white' : 'bg-surface-variant text-on-surface-variant'}`}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${draft.type === 'INCOME' ? 'bg-emerald-600 text-white' : 'bg-white/5 text-on-surface-variant'}`}
                     type="button"
                   >
                     Ingreso
@@ -190,8 +190,8 @@ export default function TransactionsEditorList({
                         onClick={() => setDraft({ ...draft, categoryId: category.id })}
                         className={`text-xs px-3 py-1.5 rounded-full border flex items-center gap-1.5 font-medium transition-colors ${
                           draft.categoryId === category.id
-                            ? 'border-indigo-400 bg-indigo-500/10 text-indigo-300'
-                            : 'border-outline-variant text-on-surface-variant'
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-white/10 text-on-surface-variant'
                         }`}
                         type="button"
                       >
@@ -209,54 +209,51 @@ export default function TransactionsEditorList({
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={cancelEdit}
-                    className="supabase-btn flex-1 !rounded-full"
+                    className="flex-1 px-4 py-2 rounded-full border border-white/10 flex items-center justify-center gap-2 hover:bg-white/5 transition-colors"
                     disabled={isSaving}
                     type="button"
                   >
-                    <span className="inline-flex items-center gap-2">
-                      <X className="h-4 w-4" />
-                      Cancelar
-                    </span>
+                    <X className="h-4 w-4" />
+                    Cancelar
                   </button>
                   <button
                     onClick={saveEdit}
-                    className="supabase-btn flex-1 !rounded-full !bg-primary !text-white"
+                    className="neon-btn flex-1 py-2"
                     disabled={isSaving}
                     type="button"
                   >
-                    <span className="inline-flex items-center gap-2">
-                      <Save className="h-4 w-4" />
-                      {isSaving ? 'Guardando...' : 'Guardar'}
-                    </span>
+                    <Save className="h-4 w-4 mr-2" />
+                    {isSaving ? 'Guardando...' : 'Guardar'}
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-full text-white ${tx.type === 'INCOME' ? 'bg-emerald-600' : 'bg-indigo-500'}`}>
-                    {tx.type === 'INCOME' ? <CirclePlus className="h-5 w-5" /> : <ReceiptText className="h-5 w-5" />}
+              <div className="flex items-center justify-between gap-2 overflow-hidden">
+                <div className="flex items-center gap-3 flex-1 overflow-hidden">
+                  <div className={`w-8 h-8 rounded-full flex shrink-0 items-center justify-center text-white ${tx.type === 'INCOME' ? 'bg-emerald-600/20' : 'bg-white/5'}`}>
+                    <ReceiptText className="h-4 w-4" />
                   </div>
-                  <div>
-                    <p className="font-semibold text-sm leading-tight text-on-surface">{tx.description || 'Movimiento'}</p>
-                    <p className="text-xs text-on-surface-variant font-medium mt-0.5">
+                  <div className="flex flex-col justify-center truncate">
+                    <p className="font-bold text-[14px] leading-tight text-white truncate">{tx.description || 'Movimiento'}</p>
+                    <p className="text-[11px] text-on-surface-variant font-medium mt-0.5 truncate">
                       {new Date(tx.date).toLocaleDateString('es-CL')}
-                      {tx.category ? ` • ${tx.category.name}` : ''}
+                      {tx.category ? `, ${tx.category.name}` : ''}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className={`text-[15px] font-medium ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-on-surface'}`}>
+                
+                <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center border border-white/20 rounded-full h-11 px-4 min-w-[70px] justify-center shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
+                    <p className={`font-bold text-[14px] whitespace-nowrap ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-white'}`}>
                       {tx.type === 'EXPENSE' ? '-' : '+'}${formatClp(tx.amount)}
                     </p>
                   </div>
                   <button
                     onClick={() => startEdit(tx)}
-                    className="p-1.5 rounded-full bg-surface-variant hover:bg-outline-variant text-on-surface-variant hover:text-white transition-colors"
+                    className="p-3 rounded-full hover:bg-white/10 text-on-surface-variant hover:text-white transition-colors"
                     type="button"
                   >
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Pencil className="h-4 w-4" />
                   </button>
                 </div>
               </div>

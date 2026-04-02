@@ -1,28 +1,26 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @theme {
-  --color-background-start: #01142F;
-  --color-background-end: #010A18;
-  --color-surface: #1C2331;
-  --color-surface-hover: #262E3E;
-  --color-surface-variant: #2D3748;
-  --color-on-surface: #F8FAFC;
-  --color-on-surface-variant: #94A3B8;
-  --color-primary: #3b82f6;
-  --color-on-primary: #ffffff;
+  --color-background-start: #000000;
+  --color-background-end: #071F99;
+  --color-surface: #101010;
+  --color-surface-hover: #1A1A1A;
+  --color-surface-variant: #111116;
+  --color-on-surface: #FFFFFF;
+  --color-on-surface-variant: #A1A1AA;
+  --color-primary: #FDE047;
+  --color-on-primary: #000000;
   --color-error: #ef4444;
   --color-on-error: #ffffff;
-  --color-outline: #334155;
-  --color-outline-variant: #475569;
+  --color-outline: rgba(255, 255, 255, 0.1);
+  --color-outline-variant: rgba(255, 255, 255, 0.2);
 
-  --font-serif: "Playfair Display", serif;
-  --font-sans: "Inter", system-ui, sans-serif;
+  --font-sans: "Wix Madefor Display", system-ui, sans-serif;
 }
 
 @layer base {
   body {
-    background: linear-gradient(180deg, var(--color-background-start) 0%, var(--color-background-end) 100%);
+    background: linear-gradient(180deg, var(--color-background-start) 20%, var(--color-background-end) 120%);
     background-attachment: fixed;
     color: var(--color-on-surface);
     font-family: var(--font-sans);
@@ -32,96 +30,110 @@
 }
 
 @layer utilities {
-  .fintech-card {
-    background-color: var(--color-surface);
+  .habit-card {
+    background-color: var(--color-surface-variant);
     border: 1px solid var(--color-outline);
-    border-radius: 1.5rem;
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-  
-  .fintech-card:hover {
-    border-color: var(--color-outline-variant);
+    border-radius: 2rem;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
   }
 
-  /* Keep legacy supabase classes but map them to fintech styling to avoid breaking existing items temporarily */
-  .supabase-card {
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-outline);
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
-    border-radius: 1rem;
+  .habit-pill {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 9999px;
+    transition: all 0.2s ease;
   }
   
-  .supabase-btn {
-    background-color: var(--color-surface-variant);
-    color: var(--color-on-surface);
-    border-radius: 0.5rem;
-    font-weight: 500;
+  .habit-pill:active {
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .neon-btn {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    border-radius: 9999px;
+    font-weight: 700;
     font-family: var(--font-sans);
     transition: all 0.15s ease-out;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.5rem 1rem;
     cursor: pointer;
+    box-shadow: 0 4px 14px rgba(253, 224, 71, 0.3);
   }
   
-  .supabase-btn:hover {
-    background-color: var(--color-outline-variant);
+  .neon-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Legacy aliases mapped to new aesthetic to prevent crashes during migration */
+  .fintech-card,
+  .supabase-card {
+    background-color: var(--color-surface-variant);
+    border: 1px solid var(--color-outline);
+    border-radius: 2rem;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
+  }
+  
+  .supabase-btn {
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    border-radius: 9999px;
+    font-weight: 700;
+    font-family: var(--font-sans);
+    transition: all 0.15s ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(253, 224, 71, 0.3);
+    padding: 0.5rem 1rem;
   }
   
   .supabase-btn:active {
-    transform: scale(0.98);
+    transform: scale(0.95);
   }
 
   .supabase-input {
-    background-color: var(--color-background-end);
+    background-color: var(--color-surface);
     border: 1px solid var(--color-outline);
-    border-radius: 0.5rem;
+    border-radius: 1rem;
     color: var(--color-on-surface);
     font-family: var(--font-sans);
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
     transition: all 0.2s ease;
   }
 
   .supabase-input:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    box-shadow: 0 0 0 2px rgba(253, 224, 71, 0.25);
   }
 
   .fintech-circle-btn {
-    background-color: #2D3748;
-    color: #F8FAFC;
+    background-color: rgba(255,255,255,0.05);
+    color: var(--color-on-surface);
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 9999px;
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
     cursor: pointer;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   }
 
   .fintech-circle-btn:active {
     transform: scale(0.95);
-    background-color: #3f4b5e;
+    background-color: rgba(255,255,255,0.1);
   }
 
   .fintech-hero-number {
-    font-family: var(--font-serif);
-    font-weight: 600;
+    font-family: var(--font-sans);
+    font-weight: 700;
     letter-spacing: -0.02em;
     color: var(--color-on-surface);
-  }
-  
-  .fintech-hero-number.primary {
-    color: var(--color-on-surface);
-  }
-
-  .fintech-hero-number.error {
-    color: var(--color-error);
   }
 }
 
