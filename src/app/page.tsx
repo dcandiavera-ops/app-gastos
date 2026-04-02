@@ -1,10 +1,9 @@
 import Link from 'next/link';
-import { CircleAlert, CircleCheck, CirclePlus, Inbox, List, ReceiptText, TriangleAlert } from 'lucide-react';
+import { Plus, Replace, LayoutList, MoreHorizontal, Inbox, ArrowUpRight, ArrowDownLeft, ChevronRight } from 'lucide-react';
 import { ensureDbUser, getOptionalAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { formatClp, startOfCurrentMonth, getDaysRemainingInCycle } from '@/lib/money';
+import { formatClp, startOfCurrentMonth } from '@/lib/money';
 import type { TransactionRecord } from '@/lib/transaction-types';
-import MonthlyBudgetEditor from '@/components/MonthlyBudgetEditor';
 import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
@@ -15,21 +14,20 @@ export default async function Dashboard() {
     redirect('/auth');
   }
 
-  let budget = 1000000;
   let recentTransactions: TransactionRecord[] = [];
   let actualSpent = 0;
-  let actualIncome = 0;
+  let remaining = 0;
 
   try {
     const dbUser = await ensureDbUser(user);
     const monthStart = startOfCurrentMonth();
-    const [recentTransactionsResult, monthlyExpenseAggregate, monthlyIncomeAggregate] = await Promise.all([
+    const [recentTransactionsResult, monthlyExpenseAggregate] = await Promise.all([
       prisma.transaction.findMany({
         where: {
           userId: user.id,
         },
         orderBy: { date: 'desc' },
-        take: 5,
+        take: 10,
         include: { category: true },
       }),
       prisma.transaction.aggregate({
@@ -40,163 +38,106 @@ export default async function Dashboard() {
           date: { gte: monthStart },
         },
       }),
-      prisma.transaction.aggregate({
-        _sum: { amount: true },
-        where: {
-          userId: user.id,
-          type: 'INCOME',
-          date: { gte: monthStart },
-        },
-      }),
     ]);
 
-    budget = dbUser.monthlyBudget;
     recentTransactions = recentTransactionsResult;
     actualSpent = monthlyExpenseAggregate._sum.amount ?? 0;
-    actualIncome = monthlyIncomeAggregate._sum.amount ?? 0;
+    remaining = dbUser.monthlyBudget - actualSpent;
   } catch (error) {
     console.error('Dashboard load error:', error);
   }
 
-  const rawPercentage = budget > 0 ? (actualSpent / budget) * 100 : 0;
-  const percentage = Math.min(rawPercentage, 100);
-  const remaining = budget - actualSpent;
-
-  const daysRemaining = getDaysRemainingInCycle();
-  const daysText = daysRemaining === 1 ? '1 dia' : `${daysRemaining} dias`;
-
-  let alertMessage = '';
-  let alertColor = '';
-  let AlertIcon = CircleCheck;
-  let progressBarColor = '';
-
-  if (actualSpent > budget) {
-    alertMessage = `Atencion: superaste tu presupuesto mensual por $${formatClp(actualSpent - budget)} CLP.`;
-    alertColor = 'text-error';
-    AlertIcon = TriangleAlert;
-    progressBarColor = 'bg-error shadow-[0_0_25px_rgba(255,180,171,0.6)]';
-  } else if (rawPercentage >= 80) {
-    alertMessage = `Cuidado: estas cerca del limite. Te quedan $${formatClp(remaining)} CLP para los ${daysText} que faltan del mes.`;
-    alertColor = 'text-yellow-400';
-    AlertIcon = CircleAlert;
-    progressBarColor = 'bg-yellow-400 shadow-[0_0_25px_rgba(250,204,21,0.6)]';
-  } else {
-    alertMessage = `Buen trabajo: estas dentro del presupuesto. Te quedan $${formatClp(remaining)} CLP para los ${daysText} que faltan del mes.`;
-    alertColor = 'text-primary';
-    AlertIcon = CircleCheck;
-    progressBarColor = 'bg-primary shadow-[0_0_25px_rgba(170,255,220,0.6)]';
-  }
-
   return (
-    <main className="pt-28 pb-32 px-6 max-w-7xl mx-auto space-y-8">
-      <section className="relative supabase-card p-10 rounded-2xl flex flex-col items-center justify-center text-center">
-        <div className="relative z-10 w-full space-y-6">
-          <p className="font-semibold text-on-surface-variant tracking-wider uppercase text-xs inline-flex items-center gap-2 bg-surface-variant/40 px-4 py-1.5 rounded-full border border-outline/50">
-            <span className={`w-2 h-2 rounded-full ${actualSpent > budget ? 'bg-error' : 'bg-primary'}`}></span>
-            Presupuesto mensual
-          </p>
-
-          <div className="flex flex-col items-center justify-center gap-2">
-            <h2 className="text-sm font-medium text-on-surface-variant uppercase tracking-wide">Total gastado</h2>
-            <div className="flex items-baseline justify-center gap-2 mt-2">
-              <span className={`text-3xl md:text-5xl supabase-hero-number ${actualSpent > budget ? 'error' : 'primary'}`}>$</span>
-              <h1 className={`text-6xl md:text-[5.5rem] supabase-hero-number ${actualSpent > budget ? 'error' : 'primary'}`}>
-                {formatClp(actualSpent)}
-              </h1>
-            </div>
-            <div className="mt-4">
-              <MonthlyBudgetEditor initialValue={budget} />
-            </div>
-          </div>
-
-          <div className="w-full max-w-md mx-auto h-3 bg-surface-variant rounded-full border border-outline relative overflow-hidden mt-8">
-            <div
-              className={`h-full rounded-full transition-all duration-1000 ease-out ${actualSpent > budget ? 'bg-error' : 'bg-primary'}`}
-              style={{ width: `${percentage}%` }}
-            >
-            </div>
-          </div>
-
-          <div className="flex justify-center mt-8">
-            <div className={`inline-flex items-center gap-3 px-5 py-3 rounded-lg border border-outline bg-surface-variant/30 ${alertColor}`}>
-              <AlertIcon className="h-5 w-5" />
-              <p className="font-medium text-sm md:text-base text-on-surface">{alertMessage}</p>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-4 pt-6">
-            <div className="rounded-xl supabase-card px-5 py-4 text-left">
-              <p className="text-xs uppercase tracking-wider text-on-surface-variant font-medium">Ingresos del mes</p>
-              <p className="text-xl font-bold mt-1 text-primary">+${formatClp(actualIncome)}</p>
-            </div>
-            <div className="rounded-xl supabase-card px-5 py-4 text-left">
-              <p className="text-xs uppercase tracking-wider text-on-surface-variant font-medium">Disponible</p>
-              <p className="text-2xl font-black mt-2">{remaining >= 0 ? '$' : '-$'}{formatClp(Math.abs(remaining))}</p>
-            </div>
-            <div className="rounded-2xl bg-surface-container-highest/50 border border-outline-variant/20 px-5 py-4 text-left">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Movimientos</p>
-              <p className="text-2xl font-black mt-2">{recentTransactions.length}</p>
-            </div>
-          </div>
+    <main className="pt-16 pb-32 px-4 max-w-md mx-auto space-y-8 flex flex-col items-center">
+      
+      {/* Revolut Style Hero */}
+      <section className="w-full flex flex-col items-center mt-6 space-y-2">
+        <div className="flex items-center gap-2 text-on-surface-variant font-medium text-xs mb-1">
+          <span className="text-base leading-none">🇨🇱</span>
+          <span>Principal · CLP</span>
         </div>
+        
+        <h1 className="text-6xl fintech-hero-number drop-shadow-sm flex items-start gap-1">
+          <span className="text-3xl mt-2 font-sans opacity-80">$</span>
+          {formatClp(Math.max(0, remaining))}
+        </h1>
+        <p className="text-sm font-medium text-on-surface-variant">Disponible</p>
+
+        <button className="mt-4 px-5 py-2 rounded-full bg-surface-variant hover:bg-outline-variant transition-colors text-sm font-medium text-on-surface border border-outline">
+          Gastado: ${formatClp(actualSpent)}
+        </button>
       </section>
 
-      <div className="supabase-card p-6 md:p-8">
-        <div className="flex justify-between items-center mb-8 px-2">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-inner">
-              <List className="h-6 w-6" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-black tracking-tight text-on-surface">Desglose de movimientos</h3>
-              <p className="text-[10px] uppercase font-bold text-on-surface/40 tracking-[0.2em] mt-1">Actividad reciente</p>
-            </div>
+      {/* Action Buttons Row */}
+      <section className="flex items-start justify-center gap-4 w-full mt-2">
+        <Link href="/entry" className="flex flex-col items-center gap-2 group">
+          <div className="fintech-circle-btn">
+            <Plus className="h-6 w-6" />
           </div>
-          <Link
-            href="/history"
-            className="text-[10px] text-primary font-bold uppercase tracking-[0.2em] bg-primary/10 px-5 py-3 rounded-full hover:bg-primary/20 transition-colors border border-primary/20 active:scale-95 shadow-[0_0_15px_rgba(170,255,220,0.1)]"
-          >
-            Ver historial
-          </Link>
+          <span className="text-[11px] font-semibold text-on-surface-variant group-active:text-on-surface transition-colors">Añadir</span>
+        </Link>
+        <Link href="/history" className="flex flex-col items-center gap-2 group">
+          <div className="fintech-circle-btn">
+            <Replace className="h-6 w-6" />
+          </div>
+          <span className="text-[11px] font-semibold text-on-surface-variant group-active:text-on-surface transition-colors">Ver todo</span>
+        </Link>
+        <Link href="/budget" className="flex flex-col items-center gap-2 group">
+          <div className="fintech-circle-btn">
+            <LayoutList className="h-6 w-6" />
+          </div>
+          <span className="text-[11px] font-semibold text-on-surface-variant group-active:text-on-surface transition-colors">Análisis</span>
+        </Link>
+        <Link href="/scan" className="flex flex-col items-center gap-2 group">
+          <div className="fintech-circle-btn">
+            <MoreHorizontal className="h-6 w-6" />
+          </div>
+          <span className="text-[11px] font-semibold text-on-surface-variant group-active:text-on-surface transition-colors">Escanear</span>
+        </Link>
+      </section>
+
+      {/* Transactions List Card Container */}
+      <section className="fintech-card w-full p-4 mt-6">
+        <div className="flex justify-between items-center mb-4 px-1">
+          <h3 className="text-sm font-semibold text-on-surface">Actividad del mes</h3>
         </div>
 
-        <div className="space-y-3">
+        <div className="divide-y divide-outline/50">
           {recentTransactions.length > 0 ? recentTransactions.map((tx: TransactionRecord) => (
-            <div key={tx.id} className="flex items-center justify-between p-5 rounded-2xl hover:bg-surface-bright/50 border border-transparent hover:border-outline-variant/30 transition-all group backdrop-blur-md">
-              <div className="flex items-center gap-5">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors shadow-inner ${tx.type === 'INCOME' ? 'bg-primary/20 text-primary border border-primary/30' : 'bg-surface-container-highest/80 text-on-surface/60 border border-outline-variant/30 group-hover:bg-primary/10 group-hover:border-primary/30 group-hover:text-primary/90'}`}>
-                  {tx.type === 'INCOME' ? <CirclePlus className="h-7 w-7" /> : <ReceiptText className="h-7 w-7" />}
+            <div key={tx.id} className="flex items-center justify-between py-4 group cursor-pointer active:bg-surface-hover transition-colors rounded-lg px-2 -mx-2">
+              <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white ${tx.type === 'INCOME' ? 'bg-emerald-600' : 'bg-indigo-500'}`}>
+                  {tx.type === 'INCOME' ? <ArrowDownLeft className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
                 </div>
                 <div>
-                  <p className="font-extrabold text-[17px] text-on-surface tracking-tight group-hover:text-primary transition-colors">{tx.description || 'Movimiento'}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <p className="text-[11px] text-on-surface/40 font-mono uppercase tracking-widest">
-                      {new Date(tx.date).toLocaleDateString('es-CL')}
-                    </p>
-                    {tx.category && (
-                      <span className="text-[9px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full border border-outline-variant/30 text-on-surface/60" style={{ borderColor: tx.category.color, color: tx.category.color }}>
-                        {tx.category.name}
-                      </span>
-                    )}
-                  </div>
+                  <p className="font-semibold text-[15px] leading-tight text-on-surface">{tx.description || 'Movimiento'}</p>
+                  <p className="text-[12px] text-on-surface-variant font-medium mt-0.5">
+                    {new Date(tx.date).toLocaleDateString('es-CL', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
+                    {tx.category && ` · ${tx.category.name}`}
+                  </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className={`font-black text-xl tracking-tighter ${tx.type === 'INCOME' ? 'text-primary drop-shadow-[0_0_12px_rgba(170,255,220,0.4)]' : 'text-on-surface'}`}>
-                  {tx.type === 'EXPENSE' ? '-' : '+'}${formatClp(tx.amount)}
+              <div className="text-right flex items-center gap-2">
+                <p className={`font-medium text-[15px] ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-on-surface'}`}>
+                  {tx.type === 'INCOME' ? '+' : '-'}${formatClp(tx.amount)}
                 </p>
-                <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-on-surface/30 mt-1">CLP</p>
+                <ChevronRight className="h-4 w-4 text-outline-variant opacity-0" />
               </div>
             </div>
           )) : (
-            <div className="py-14 flex flex-col items-center justify-center opacity-60 bg-surface-container-highest/30 rounded-3xl border border-dashed border-outline-variant/30">
-              <Inbox className="mb-4 h-16 w-16 text-on-surface/30" />
-              <p className="text-sm font-bold tracking-widest uppercase text-on-surface/50">Aun no hay gastos registrados.</p>
-              <p className="text-xs text-on-surface/40 mt-2 max-w-sm text-center">Tus registros manuales o boletas procesadas por OCR apareceran aqui.</p>
+            <div className="py-10 flex flex-col items-center justify-center opacity-60">
+              <Inbox className="mb-3 h-10 w-10 text-on-surface-variant" />
+              <p className="text-sm font-medium text-on-surface-variant">Sin transacciones recientes.</p>
             </div>
           )}
         </div>
-      </div>
+        
+        {recentTransactions.length > 0 && (
+           <Link href="/history" className="block text-center pt-4 pb-2 mt-2 text-[13px] font-semibold text-primary hover:text-white transition-colors border-t border-outline/50">
+             Ver todo
+           </Link>
+        )}
+      </section>
     </main>
   );
 }

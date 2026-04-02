@@ -124,18 +124,22 @@ export default function TransactionsEditorList({
   };
 
   if (items.length === 0) {
-    return <p className="text-sm text-on-surface/50">{emptyMessage}</p>;
+    return (
+      <div className="fintech-card p-8 flex flex-col items-center justify-center text-center opacity-70">
+        <p className="text-sm text-on-surface-variant font-medium">{emptyMessage}</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="fintech-card divide-y divide-outline/50 overflow-hidden">
       {items.map((tx) => {
         const isEditing = editingId === tx.id && draft;
 
         return (
           <div
             key={tx.id}
-            className="supabase-card p-4 transition-all"
+            className="p-4 transition-all"
           >
             {isEditing ? (
               <div className="space-y-4">
@@ -162,17 +166,16 @@ export default function TransactionsEditorList({
                 />
                 
                 <div className="flex flex-wrap gap-2">
-                  {/* Tipo de movimiento */}
                   <button
                     onClick={() => setDraft({ ...draft, type: 'EXPENSE' })}
-                    className={`supabase-btn text-xs px-3 py-1.5 rounded ${draft.type === 'EXPENSE' ? 'supabase-btn-primary' : ''}`}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${draft.type === 'EXPENSE' ? 'bg-indigo-500 text-white' : 'bg-surface-variant text-on-surface-variant'}`}
                     type="button"
                   >
                     Gasto
                   </button>
                   <button
                     onClick={() => setDraft({ ...draft, type: 'INCOME', categoryId: null })}
-                    className={`supabase-btn text-xs px-3 py-1.5 rounded ${draft.type === 'INCOME' ? 'supabase-btn-primary' : ''}`}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${draft.type === 'INCOME' ? 'bg-emerald-600 text-white' : 'bg-surface-variant text-on-surface-variant'}`}
                     type="button"
                   >
                     Ingreso
@@ -185,10 +188,10 @@ export default function TransactionsEditorList({
                       <button
                         key={category.id}
                         onClick={() => setDraft({ ...draft, categoryId: category.id })}
-                        className={`supabase-btn text-xs px-2.5 py-1.5 rounded-full border flex items-center gap-1.5 ${
+                        className={`text-xs px-3 py-1.5 rounded-full border flex items-center gap-1.5 font-medium transition-colors ${
                           draft.categoryId === category.id
-                            ? 'border-primary bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary'
-                            : ''
+                            ? 'border-indigo-400 bg-indigo-500/10 text-indigo-300'
+                            : 'border-outline-variant text-on-surface-variant'
                         }`}
                         type="button"
                       >
@@ -206,7 +209,7 @@ export default function TransactionsEditorList({
                 <div className="flex gap-3 pt-2">
                   <button
                     onClick={cancelEdit}
-                    className="supabase-btn flex-1"
+                    className="supabase-btn flex-1 !rounded-full"
                     disabled={isSaving}
                     type="button"
                   >
@@ -217,7 +220,7 @@ export default function TransactionsEditorList({
                   </button>
                   <button
                     onClick={saveEdit}
-                    className="supabase-btn supabase-btn-primary flex-1"
+                    className="supabase-btn flex-1 !rounded-full !bg-primary !text-white"
                     disabled={isSaving}
                     type="button"
                   >
@@ -231,12 +234,12 @@ export default function TransactionsEditorList({
             ) : (
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-md ${tx.type === 'INCOME' ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-surface-variant text-on-surface-variant border border-outline'}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full text-white ${tx.type === 'INCOME' ? 'bg-emerald-600' : 'bg-indigo-500'}`}>
                     {tx.type === 'INCOME' ? <CirclePlus className="h-5 w-5" /> : <ReceiptText className="h-5 w-5" />}
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">{tx.description || 'Movimiento'}</p>
-                    <p className="text-xs text-on-surface-variant mt-0.5">
+                    <p className="font-semibold text-sm leading-tight text-on-surface">{tx.description || 'Movimiento'}</p>
+                    <p className="text-xs text-on-surface-variant font-medium mt-0.5">
                       {new Date(tx.date).toLocaleDateString('es-CL')}
                       {tx.category ? ` • ${tx.category.name}` : ''}
                     </p>
@@ -244,13 +247,13 @@ export default function TransactionsEditorList({
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <p className={`text-base font-bold ${tx.type === 'INCOME' ? 'text-primary' : 'text-on-surface'}`}>
+                    <p className={`text-[15px] font-medium ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-on-surface'}`}>
                       {tx.type === 'EXPENSE' ? '-' : '+'}${formatClp(tx.amount)}
                     </p>
                   </div>
                   <button
                     onClick={() => startEdit(tx)}
-                    className="supabase-btn h-8 w-8 p-0 rounded-md"
+                    className="p-1.5 rounded-full bg-surface-variant hover:bg-outline-variant text-on-surface-variant hover:text-white transition-colors"
                     type="button"
                   >
                     <Pencil className="h-3.5 w-3.5" />

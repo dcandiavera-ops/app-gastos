@@ -25,7 +25,7 @@ export default function BottomNavBar() {
   ];
 
   return (
-    <nav className="fixed bottom-4 left-4 right-4 rounded-2xl z-50 bg-surface/95 flex justify-around items-center h-[72px] px-2 shadow-lg border border-outline">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-[#0E1522]/95 backdrop-blur-md flex justify-around items-center h-20 px-2 border-t border-outline/30 pb-safe">
       {navItems.map((item) => {
         const isActive = pathname === item.path;
         const Icon = item.icon;
@@ -34,14 +34,14 @@ export default function BottomNavBar() {
           <Link 
             key={item.path} 
             href={item.path} 
-            className={`flex flex-col items-center justify-center transition-all duration-200 ease-out p-2 rounded-xl ${
+            className={`flex flex-col items-center justify-center transition-all duration-200 ease-out w-16 h-14 rounded-2xl ${
               isActive 
-                ? 'text-primary' 
-                : 'text-on-surface-variant hover:bg-surface-variant/50 hover:text-on-surface'
+                ? 'bg-outline-variant/30 text-white' 
+                : 'text-on-surface-variant hover:text-white'
             }`}
           >
-            <Icon className="mb-1 h-[22px] w-[22px]" />
-            <span className="font-label font-medium text-[10px] uppercase tracking-wider mt-1">
+            <Icon className="mb-1 h-6 w-6" />
+            <span className="font-sans font-medium text-[10px] tracking-wide mt-0.5">
               {item.name}
             </span>
           </Link>
