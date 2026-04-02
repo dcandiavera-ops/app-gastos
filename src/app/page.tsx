@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { LayoutList, Inbox, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { ensureDbUser, getOptionalAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { formatClp, startOfCurrentMonth } from '@/lib/money';
+import { formatClp, startOfCurrentMonth, getDaysRemainingInCycle } from '@/lib/money';
+import { getCategoryIcon } from '@/lib/category-icons';
 import type { TransactionRecord } from '@/lib/transaction-types';
 import { redirect } from 'next/navigation';
 
@@ -61,9 +62,8 @@ export default async function Dashboard() {
     };
   });
 
-  // Days remaining in this month
-  const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  const daysRemaining = endOfMonth.getDate() - today.getDate();
+  // Days remaining in the 25-to-25 budget cycle
+  const daysRemaining = getDaysRemainingInCycle();
 
   const percentage = monthlyBudget > 0 ? Math.min(100, 100 - Math.round((actualSpent / monthlyBudget) * 100)) : 100;
   const strokeDasharray = 283;
@@ -115,7 +115,7 @@ export default async function Dashboard() {
         <div className="flex items-center gap-2 mb-5 z-10">
           <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></div>
           <span className="text-xs font-semibold text-on-surface-variant">
-            Quedan <span className="text-white font-bold">{daysRemaining} días</span> del mes
+            Quedan <span className="text-white font-bold">{daysRemaining} días</span> con este dinero
           </span>
         </div>
         
@@ -133,18 +133,24 @@ export default async function Dashboard() {
           <span className="text-[10px] font-bold bg-white/10 text-white px-2 py-0.5 rounded-full">{recentTransactions.length}/10</span>
         </div>
 
-        <div className="space-y-3">
-          {recentTransactions.length > 0 ? recentTransactions.map((tx: TransactionRecord) => (
-            <div key={tx.id} className="habit-pill flex items-center justify-between p-2.5 pl-4 cursor-pointer backdrop-blur-sm">
+        <div className="space-y-3 p-4 rounded-[2rem] bg-white/[0.03] border border-white/[0.06] backdrop-blur-xl">
+          {recentTransactions.length > 0 ? recentTransactions.map((tx: TransactionRecord) => {
+            const CategoryIcon = tx.category ? getCategoryIcon(tx.category.name) : (tx.type === 'INCOME' ? ArrowDownLeft : ArrowUpRight);
+            const catColor = tx.category?.color || (tx.type === 'INCOME' ? '#34d399' : '#ffffff');
+            return (
+            <div key={tx.id} className="habit-pill flex items-center justify-between p-2.5 pl-3 cursor-pointer">
               <div className="flex items-center gap-3 flex-1 overflow-hidden">
-                <div className={`w-9 h-9 rounded-full flex shrink-0 items-center justify-center ${tx.type === 'INCOME' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/5 text-white'}`}>
-                  {tx.type === 'INCOME' ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
+                <div
+                  className="w-10 h-10 rounded-full flex shrink-0 items-center justify-center"
+                  style={{ backgroundColor: `${catColor}15`, color: catColor }}
+                >
+                  <CategoryIcon className="h-[18px] w-[18px]" />
                 </div>
                 <div className="flex flex-col justify-center truncate">
                   <p className="font-bold text-[14px] leading-tight text-white truncate">{tx.description || 'Movimiento'}</p>
                   <p className="text-[11px] text-on-surface-variant font-medium mt-0.5 truncate">
                     {new Date(tx.date).toLocaleDateString('es-CL', { month: 'short', day: 'numeric'})}
-                    {tx.category && `, ${tx.category.name}`}
+                    {tx.category && ` · ${tx.category.name}`}
                   </p>
                 </div>
               </div>
@@ -154,8 +160,9 @@ export default async function Dashboard() {
                 </p>
               </div>
             </div>
-          )) : (
-             <div className="py-8 flex flex-col items-center justify-center bg-white/[0.03] rounded-[2rem] border border-white/[0.06] backdrop-blur-sm">
+            );
+          }) : (
+             <div className="py-8 flex flex-col items-center justify-center">
                <Inbox className="mb-2 h-8 w-8 text-on-surface-variant" />
                <p className="text-xs font-semibold text-on-surface-variant">Sin transacciones recientes</p>
              </div>

@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { CirclePlus, Pencil, ReceiptText, Save, X } from 'lucide-react';
+import { CirclePlus, Pencil, ReceiptText, Save, X, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/transaction-types';
 import { formatClp } from '@/lib/money';
+import { getCategoryIcon } from '@/lib/category-icons';
 
 type CategoryOption = {
   id: string;
@@ -230,14 +231,23 @@ export default function TransactionsEditorList({
             ) : (
               <div className="flex items-center justify-between gap-2 overflow-hidden">
                 <div className="flex items-center gap-3 flex-1 overflow-hidden">
-                  <div className={`w-8 h-8 rounded-full flex shrink-0 items-center justify-center text-white ${tx.type === 'INCOME' ? 'bg-emerald-600/20' : 'bg-white/5'}`}>
-                    <ReceiptText className="h-4 w-4" />
-                  </div>
+                  {(() => {
+                    const CatIcon = tx.category ? getCategoryIcon(tx.category.name) : (tx.type === 'INCOME' ? ArrowDownLeft : ArrowUpRight);
+                    const catColor = tx.category?.color || (tx.type === 'INCOME' ? '#34d399' : '#ffffff');
+                    return (
+                      <div
+                        className="w-10 h-10 rounded-full flex shrink-0 items-center justify-center"
+                        style={{ backgroundColor: `${catColor}15`, color: catColor }}
+                      >
+                        <CatIcon className="h-[18px] w-[18px]" />
+                      </div>
+                    );
+                  })()}
                   <div className="flex flex-col justify-center truncate">
                     <p className="font-bold text-[14px] leading-tight text-white truncate">{tx.description || 'Movimiento'}</p>
                     <p className="text-[11px] text-on-surface-variant font-medium mt-0.5 truncate">
                       {new Date(tx.date).toLocaleDateString('es-CL')}
-                      {tx.category ? `, ${tx.category.name}` : ''}
+                      {tx.category ? ` · ${tx.category.name}` : ''}
                     </p>
                   </div>
                 </div>
