@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { CirclePlus, Pencil, ReceiptText, Save, X, ArrowDownLeft, ArrowUpRight, Wallet, HandCoins } from 'lucide-react';
+import { CirclePlus, Pencil, ReceiptText, Save, X, ArrowDownLeft, ArrowUpRight, Wallet, HandCoins, Trash2 } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/transaction-types';
 import { formatClp } from '@/lib/money';
 import { getCategoryIcon } from '@/lib/category-icons';
@@ -124,6 +124,22 @@ export default function TransactionsEditorList({
       setError('No se pudo actualizar el movimiento.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este movimiento?')) return;
+    try {
+      const resp = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+      if (resp.ok) {
+        setItems(prev => prev.filter(item => item.id !== id));
+      } else {
+        const data = await resp.json();
+        setError(data.error || 'Error al eliminar');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Error de red al eliminar');
     }
   };
 
@@ -299,6 +315,13 @@ export default function TransactionsEditorList({
                     type="button"
                   >
                     <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(tx.id)}
+                    className="p-3 rounded-full hover:bg-white/10 text-red-400 hover:text-red-500 transition-colors"
+                    type="button"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>

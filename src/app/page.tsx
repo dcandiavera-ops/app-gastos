@@ -51,7 +51,9 @@ export default async function Dashboard() {
     ]);
 
     const spentOnCredit = expenseAggregates.find(a => a.paymentMethod === 'CREDIT')?._sum.amount ?? 0;
-    const spentOnDebit = expenseAggregates.find(a => a.paymentMethod === 'CASH')?._sum.amount ?? 0;
+    const spentOnDebit = expenseAggregates
+      .filter(a => a.paymentMethod !== 'CREDIT')
+      .reduce((acc, a) => acc + (a._sum.amount ?? 0), 0);
     const totalIncome = incomeAggregate._sum.amount ?? 0;
 
     const creditBudget = dbUser.creditBudget || 170000;

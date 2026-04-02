@@ -69,3 +69,37 @@ export async function PATCH(
     return NextResponse.json({ error: 'Failed to update transaction' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  try {
+    const user = await getOptionalAuthUser();
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await context.params;
+
+    const existingTransaction = await prisma.transaction.findFirst({
+      where: {
+        id,
+        userId: user.id,
+      },
+    });
+
+    if (!existingTransaction) {
+      return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
+    }
+
+    await prisma.transaction.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('DB DELETE Error:', error);
+    return NextResponse.json({ error: 'Failed to delete transaction' }, { status: 500 });
+  }
+}
