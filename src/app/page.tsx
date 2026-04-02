@@ -101,9 +101,9 @@ export default async function Dashboard() {
 
           <div className="flex flex-col items-center justify-center gap-1">
             <h2 className="text-xl font-bold text-on-surface/70 tracking-widest uppercase text-[10px]">Total gastado</h2>
-            <div className="flex items-start justify-center">
-              <span className="text-4xl font-extrabold text-primary/80 mt-2 font-['Boldonse']">$</span>
-              <h1 className={`text-6xl md:text-8xl font-black tracking-tighter font-['Boldonse'] text-transparent bg-clip-text bg-gradient-to-b drop-shadow-sm ${actualSpent > budget ? 'from-white to-error/80' : 'from-white to-primary/60'}`}>
+            <div className="flex items-baseline justify-center gap-1">
+              <span className="text-4xl md:text-5xl font-normal font-['Boldonse'] text-primary/80 drop-shadow-[0_0_10px_rgba(170,255,220,0.4)]">$</span>
+              <h1 className={`text-[4.5rem] md:text-[6.5rem] font-normal tracking-wide leading-tight font-['Boldonse'] text-transparent bg-clip-text pb-2 lg:pb-4 animate-glass-shine ${actualSpent > budget ? 'bg-gradient-to-r from-red-100 via-error to-red-900 drop-shadow-[0_0_20px_rgba(255,180,171,0.5)]' : 'bg-gradient-to-r from-white via-primary to-[#056c51] drop-shadow-[0_0_25px_rgba(170,255,220,0.5)]'}`}>
                 {formatClp(actualSpent)}
               </h1>
             </div>
