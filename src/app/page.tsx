@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Plus, Replace, LayoutList, MoreHorizontal, Inbox, ArrowUpRight, ArrowDownLeft, ChevronRight } from 'lucide-react';
+import { LayoutList, Inbox, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { ensureDbUser, getOptionalAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { formatClp, startOfCurrentMonth } from '@/lib/money';
@@ -49,7 +49,7 @@ export default async function Dashboard() {
     console.error('Dashboard load error:', error);
   }
 
-  // Generate fake calendar tape for visuals (last 7 days)
+  // Generate calendar tape for visuals (last 7 days)
   const today = new Date();
   const calendarDays = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date();
@@ -61,15 +61,19 @@ export default async function Dashboard() {
     };
   });
 
-  const percentage = monthlyBudget > 0 ? Math.min(100, Math.round((actualSpent / monthlyBudget) * 100)) : 0;
+  // Days remaining in this month
+  const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  const daysRemaining = endOfMonth.getDate() - today.getDate();
+
+  const percentage = monthlyBudget > 0 ? Math.min(100, 100 - Math.round((actualSpent / monthlyBudget) * 100)) : 100;
   const strokeDasharray = 283;
-  const strokeDashoffset = strokeDasharray - (strokeDasharray * percentage) / 100;
+  const strokeDashoffset = strokeDasharray - (strokeDasharray * Math.max(0, percentage)) / 100;
 
   return (
     <main className="pt-[100px] pb-32 px-4 max-w-sm mx-auto space-y-6 flex flex-col items-center">
       
-      {/* Calendar Tape */}
-      <section className="flex justify-between w-full px-2">
+      {/* Calendar Tape — glass container */}
+      <section className="flex justify-between w-full px-3 py-4 rounded-[2rem] bg-white/[0.03] border border-white/[0.06] backdrop-blur-md">
         {calendarDays.map((d, idx) => (
           <div key={idx} className="flex flex-col items-center gap-2">
             <span className="text-[11px] font-semibold text-on-surface-variant uppercase">{d.dayStr}</span>
@@ -80,51 +84,61 @@ export default async function Dashboard() {
         ))}
       </section>
 
-      {/* Massive Neon Hero Circle for Budget */}
-      <section className="w-full relative habit-card p-6 mt-4 pb-8 flex flex-col items-center overflow-hidden">
-        {/* Glow effect matching background behind card if needed */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-[40px] -mr-10 -mt-10 pointer-events-none"></div>
+      {/* ——— Hero Circle for Budget (Glass Card) ——— */}
+      <section className="w-full relative p-6 pt-5 pb-8 flex flex-col items-center overflow-hidden rounded-[2rem] bg-white/[0.03] border border-white/[0.06] backdrop-blur-xl">
+        {/* Ambient glow */}
+        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-[60px] -mr-12 -mt-12 pointer-events-none"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-500/5 rounded-full blur-[40px] -ml-8 -mb-8 pointer-events-none"></div>
         
-        <div className="flex justify-between w-full items-center mb-6 z-10">
-          <div className="text-on-surface-variant font-medium text-xs px-3 py-1 bg-white/5 rounded-full border border-white/10 flex items-center gap-2">
+        <div className="flex justify-between w-full items-center mb-4 z-10">
+          <div className="text-on-surface-variant font-medium text-xs px-3 py-1.5 bg-white/5 rounded-full border border-white/10 flex items-center gap-2">
             <LayoutList className="w-3 h-3"/> Presupuesto
           </div>
-          <span className="text-xs font-semibold text-on-surface-variant">{percentage}% restante</span>
+          <span className="text-xs font-semibold text-primary">{percentage}% restante</span>
         </div>
         
-        <div className="relative flex items-center justify-center w-48 h-48 mb-4 z-10">
+        {/* Enlarged ring — w-56 h-56 so numbers never clip */}
+        <div className="relative flex items-center justify-center w-56 h-56 my-2 z-10">
           <svg className="absolute w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8"></circle>
-            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" strokeLinecap="round" strokeDasharray={strokeDasharray} strokeDashoffset={strokeDashoffset} className="text-primary transition-all duration-1000 ease-out"></circle>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="6"></circle>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeDasharray={strokeDasharray} strokeDashoffset={strokeDashoffset} className="text-primary transition-all duration-1000 ease-out" style={{ filter: 'drop-shadow(0 0 6px rgba(253,224,71,0.5))' }}></circle>
           </svg>
-          <div className="flex flex-col items-center">
-            <h1 className="text-5xl font-bold tracking-tighter shadow-sm text-primary" style={{ textShadow: '0 0 20px rgba(253, 224, 71, 0.4)' }}>
+          <div className="flex flex-col items-center px-4">
+            <h1 className="text-[2.75rem] font-extrabold tracking-tight text-white leading-none" style={{ textShadow: '0 0 30px rgba(255,255,255,0.15)' }}>
               ${formatClp(Math.max(0, remaining))}
             </h1>
-            <p className="text-sm font-medium text-on-surface-variant mt-1">disponible</p>
+            <p className="text-sm font-medium text-on-surface-variant mt-2">disponible</p>
           </div>
         </div>
+
+        {/* Days remaining pill */}
+        <div className="flex items-center gap-2 mb-5 z-10">
+          <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></div>
+          <span className="text-xs font-semibold text-on-surface-variant">
+            Quedan <span className="text-white font-bold">{daysRemaining} días</span> del mes
+          </span>
+        </div>
         
-        <div className="flex w-full gap-4 px-4 z-10">
-          <Link href="/budget" className="flex-1 neon-btn py-3">
+        <div className="flex w-full gap-4 px-2 z-10">
+          <Link href="/budget" className="flex-1 neon-btn py-3 text-sm font-bold">
             Analizar
           </Link>
         </div>
       </section>
 
-      {/* Habits / Transactions List */}
+      {/* ——— Transactions List (Glass Card) ——— */}
       <section className="w-full space-y-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 px-1">
           <h3 className="text-[13px] font-bold text-on-surface uppercase tracking-wide">Recientes</h3>
           <span className="text-[10px] font-bold bg-white/10 text-white px-2 py-0.5 rounded-full">{recentTransactions.length}/10</span>
         </div>
 
         <div className="space-y-3">
           {recentTransactions.length > 0 ? recentTransactions.map((tx: TransactionRecord) => (
-            <div key={tx.id} className="habit-pill flex items-center justify-between p-2 pl-4 cursor-pointer">
+            <div key={tx.id} className="habit-pill flex items-center justify-between p-2.5 pl-4 cursor-pointer backdrop-blur-sm">
               <div className="flex items-center gap-3 flex-1 overflow-hidden">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white ${tx.type === 'INCOME' ? 'bg-emerald-600/20' : 'bg-white/5'}`}>
-                  {tx.type === 'INCOME' ? <ArrowDownLeft className="h-4 w-4 text-emerald-400" /> : <ArrowUpRight className="h-4 w-4 text-white" />}
+                <div className={`w-9 h-9 rounded-full flex shrink-0 items-center justify-center ${tx.type === 'INCOME' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-white/5 text-white'}`}>
+                  {tx.type === 'INCOME' ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
                 </div>
                 <div className="flex flex-col justify-center truncate">
                   <p className="font-bold text-[14px] leading-tight text-white truncate">{tx.description || 'Movimiento'}</p>
@@ -134,14 +148,14 @@ export default async function Dashboard() {
                   </p>
                 </div>
               </div>
-              <div className="shrink-0 flex items-center ml-2 border border-white/20 rounded-full h-11 px-4 min-w-[70px] justify-center shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)]">
-                <p className={`font-bold text-[14px] whitespace-nowrap ${tx.type === 'INCOME' ? 'text-primary' : 'text-white'}`}>
+              <div className="shrink-0 flex items-center ml-2 border border-white/15 rounded-full h-11 px-4 min-w-[70px] justify-center bg-white/[0.03]">
+                <p className={`font-bold text-[14px] whitespace-nowrap ${tx.type === 'INCOME' ? 'text-emerald-400' : 'text-white'}`}>
                   {tx.type === 'INCOME' ? '+' : '-'}${formatClp(tx.amount)}
                 </p>
               </div>
             </div>
           )) : (
-             <div className="py-6 flex flex-col items-center justify-center bg-white/5 rounded-[2rem] border border-white/10">
+             <div className="py-8 flex flex-col items-center justify-center bg-white/[0.03] rounded-[2rem] border border-white/[0.06] backdrop-blur-sm">
                <Inbox className="mb-2 h-8 w-8 text-on-surface-variant" />
                <p className="text-xs font-semibold text-on-surface-variant">Sin transacciones recientes</p>
              </div>
