@@ -1,4 +1,5 @@
 import { TrendingDown, TrendingUp, Wallet, Target, CalendarDays, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import CreditBudgetEditor from '@/components/CreditBudgetEditor';
 import { formatClp, startOfCurrentMonth, getMonthLabelDate, getDaysRemainingInCycle } from '@/lib/money';
 import { getCategoryIcon } from '@/lib/category-icons';
 import { requireAuthUser, ensureDbUser } from '@/lib/auth';
@@ -87,6 +88,9 @@ export default async function Budget() {
         <h1 className="text-2xl font-bold text-white tracking-tight">Análisis</h1>
         <p className="text-[11px] font-semibold text-on-surface-variant mt-1 uppercase tracking-widest">{monthLabel}</p>
       </div>
+
+      {/* Credit Budget Editor */}
+      <CreditBudgetEditor initialBudget={dbUser.creditBudget || 170000} />
 
       {/* KPI Cards Row */}
       <div className="grid grid-cols-2 gap-3">

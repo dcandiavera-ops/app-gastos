@@ -12,26 +12,40 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { monthlyBudget } = await request.json();
-    const parsedBudget = Number(monthlyBudget);
+    const body = await request.json();
+    const data: Record<string, number> = {};
 
-    if (!Number.isFinite(parsedBudget) || parsedBudget <= 0) {
-      return NextResponse.json({ error: 'Invalid monthly budget' }, { status: 400 });
+    if (body.monthlyBudget !== undefined) {
+      const parsed = Number(body.monthlyBudget);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        return NextResponse.json({ error: 'Invalid monthly budget' }, { status: 400 });
+      }
+      data.monthlyBudget = parsed;
+    }
+
+    if (body.creditBudget !== undefined) {
+      const parsed = Number(body.creditBudget);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        return NextResponse.json({ error: 'Invalid credit budget' }, { status: 400 });
+      }
+      data.creditBudget = parsed;
+    }
+
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
     await ensureDbUser(user);
 
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
-      data: {
-        monthlyBudget: parsedBudget,
-      },
-      select: { monthlyBudget: true },
+      data,
+      select: { monthlyBudget: true, creditBudget: true },
     });
 
     return NextResponse.json(updatedUser);
   } catch (error) {
     console.error('Budget PATCH Error:', error);
-    return NextResponse.json({ error: 'Failed to update monthly budget' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to update budget' }, { status: 500 });
   }
 }

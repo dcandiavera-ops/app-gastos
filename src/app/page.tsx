@@ -118,14 +118,14 @@ export default async function Dashboard() {
           <span className="text-xs font-semibold text-primary">{percentage}% restante</span>
         </div>
         
-        {/* Enlarged ring — w-56 h-56 so numbers never clip */}
-        <div className="relative flex items-center justify-center w-56 h-56 my-2 z-10">
+        {/* Enlarged ring — responsive text */}
+        <div className="relative flex items-center justify-center w-60 h-60 my-2 z-10">
           <svg className="absolute w-full h-full transform -rotate-90" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="6"></circle>
             <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeDasharray={strokeDasharray} strokeDashoffset={strokeDashoffset} className="text-primary transition-all duration-1000 ease-out" style={{ filter: 'drop-shadow(0 0 6px rgba(253,224,71,0.5))' }}></circle>
           </svg>
-          <div className="flex flex-col items-center px-4">
-            <h1 className="text-[2.75rem] font-extrabold tracking-tight text-white leading-none" style={{ textShadow: '0 0 30px rgba(255,255,255,0.15)' }}>
+          <div className="flex flex-col items-center px-2 w-full">
+            <h1 className="font-extrabold tracking-tight text-white leading-none text-center w-full" style={{ fontSize: 'clamp(1.5rem, 8vw, 2.5rem)', textShadow: '0 0 30px rgba(255,255,255,0.15)' }}>
               ${formatClp(Math.max(0, remaining))}
             </h1>
             <p className="text-sm font-medium text-on-surface-variant mt-2">disponible</p>
