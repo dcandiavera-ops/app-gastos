@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, LoaderCircle, ReceiptText, Save, Upload, X } from 'lucide-react';
+import { Camera, LoaderCircle, ReceiptText, Save, Upload, X, Wallet, HandCoins } from 'lucide-react';
 import { DEFAULT_EXPENSE_CATEGORIES } from '@/lib/category-defaults';
 
 type ScannedReceipt = {
@@ -114,6 +114,7 @@ export default function Scanner() {
   const [receipt, setReceipt] = useState<ScannedReceipt | null>(null);
   const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [selectedCategoryName, setSelectedCategoryName] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CREDIT'>('CASH');
 
   useEffect(() => {
     let ignore = false;
@@ -248,6 +249,7 @@ export default function Scanner() {
           date: receipt.date ?? new Date().toISOString(),
           description: receipt.description,
           type: 'EXPENSE',
+          paymentMethod,
           suggestedCategoryName: selectedCategoryName ?? receipt.suggestedCategory?.name ?? null,
           suggestedCategoryColor:
             categories.find((category) => category.name === selectedCategoryName)?.color ??
@@ -377,6 +379,28 @@ export default function Scanner() {
                     <p className="text-xl font-bold mt-1">
                       {receipt.date ? new Date(receipt.date).toLocaleDateString('es-CL') : 'No detectada'}
                     </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-md bg-surface-variant/50 px-4 py-3 border border-outline">
+                  <p className="text-xs uppercase tracking-wider text-on-surface-variant font-medium">Cuenta de pago</p>
+                  <div className="mt-3 flex gap-3">
+                    <button
+                      onClick={() => setPaymentMethod('CASH')}
+                      className={`flex-1 py-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-all ${paymentMethod === 'CASH' ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(62,207,142,0.1)]' : 'bg-surface border-outline-variant text-on-surface-variant'}`}
+                      type="button"
+                    >
+                      <Wallet className="h-4 w-4" />
+                      Débito
+                    </button>
+                    <button
+                      onClick={() => setPaymentMethod('CREDIT')}
+                      className={`flex-1 py-3 rounded-xl border text-sm font-bold flex items-center justify-center gap-2 transition-all ${paymentMethod === 'CREDIT' ? 'bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(62,207,142,0.1)]' : 'bg-surface border-outline-variant text-on-surface-variant'}`}
+                      type="button"
+                    >
+                      <HandCoins className="h-4 w-4" />
+                      Crédito
+                    </button>
                   </div>
                 </div>
 

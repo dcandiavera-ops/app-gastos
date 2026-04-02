@@ -4,6 +4,7 @@ export type TransactionRecord = {
   date: Date;
   description: string;
   type: string;
+  paymentMethod: string;
   categoryId: string | null;
   category?: {
     id: string;

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LayoutList, Inbox, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { LayoutList, Inbox, ArrowUpRight, ArrowDownLeft, Wallet, HandCoins } from 'lucide-react';
 import { ensureDbUser, getOptionalAuthUser } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { formatClp, startOfCurrentMonth, getDaysRemainingInCycle } from '@/lib/money';
@@ -23,16 +23,16 @@ export default async function Dashboard() {
   try {
     const dbUser = await ensureDbUser(user);
     const monthStart = startOfCurrentMonth();
-    const [recentTransactionsResult, monthlyExpenseAggregate] = await Promise.all([
+    
+    const [recentTransactionsResult, expenseAggregates, incomeAggregate] = await Promise.all([
       prisma.transaction.findMany({
-        where: {
-          userId: user.id,
-        },
+        where: { userId: user.id },
         orderBy: { date: 'desc' },
         take: 10,
         include: { category: true },
       }),
-      prisma.transaction.aggregate({
+      prisma.transaction.groupBy({
+        by: ['paymentMethod'],
         _sum: { amount: true },
         where: {
           userId: user.id,
@@ -40,12 +40,31 @@ export default async function Dashboard() {
           date: { gte: monthStart },
         },
       }),
+      prisma.transaction.aggregate({
+        _sum: { amount: true },
+        where: {
+          userId: user.id,
+          type: 'INCOME',
+          date: { gte: monthStart },
+        },
+      }),
     ]);
 
-    monthlyBudget = dbUser.monthlyBudget;
+    const spentOnCredit = expenseAggregates.find(a => a.paymentMethod === 'CREDIT')?._sum.amount ?? 0;
+    const spentOnDebit = expenseAggregates.find(a => a.paymentMethod === 'CASH')?._sum.amount ?? 0;
+    const totalIncome = incomeAggregate._sum.amount ?? 0;
+
+    const creditBudget = dbUser.creditBudget || 170000;
+    const creditRemaining = Math.max(0, creditBudget - spentOnCredit);
+    const debitBalance = totalIncome - spentOnDebit;
+
+    monthlyBudget = creditBudget + totalIncome;
     recentTransactions = recentTransactionsResult;
-    actualSpent = monthlyExpenseAggregate._sum.amount ?? 0;
-    remaining = dbUser.monthlyBudget - actualSpent;
+    actualSpent = spentOnCredit + spentOnDebit;
+    remaining = creditRemaining + debitBalance;
+
+    // We'll pass these extra values to the UI if needed
+    (Dashboard as any).extraData = { creditRemaining, debitBalance, creditBudget, totalIncome };
   } catch (error) {
     console.error('Dashboard load error:', error);
   }
@@ -119,15 +138,19 @@ export default async function Dashboard() {
           </span>
         </div>
 
-        {/* Stats row: Total budget + daily allowance */}
+        {/* Stats row: Split Credit and Debit balance */}
         <div className="flex w-full gap-3 mb-5 z-10">
           <div className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-2xl py-3 px-4 text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Presupuesto</p>
-            <p className="text-base font-bold text-white">${formatClp(monthlyBudget)}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1 flex items-center justify-center gap-1.5">
+              <HandCoins className="h-2.5 w-2.5" /> Crédito
+            </p>
+            <p className="text-base font-bold text-white">${formatClp((Dashboard as any).extraData?.creditRemaining ?? 0)}</p>
           </div>
           <div className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-2xl py-3 px-4 text-center">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Por día</p>
-            <p className="text-base font-bold text-primary">${formatClp(daysRemaining > 0 ? Math.max(0, remaining) / daysRemaining : 0)}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1 flex items-center justify-center gap-1.5">
+              <Wallet className="h-2.5 w-2.5" /> Débito
+            </p>
+            <p className="text-base font-bold text-primary">${formatClp((Dashboard as any).extraData?.debitBalance ?? 0)}</p>
           </div>
         </div>
         

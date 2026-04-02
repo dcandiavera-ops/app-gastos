@@ -15,7 +15,7 @@ export async function PATCH(
     }
 
     const { id } = await context.params;
-    const { amount, date, description, type, categoryId } = await request.json();
+    const { amount, date, description, type, categoryId, paymentMethod } = await request.json();
 
     const parsedAmount = Number(amount);
     const parsedDate = new Date(date);
@@ -52,6 +52,7 @@ export async function PATCH(
               ? 'Ingreso manual'
               : 'Gasto manual',
         type: normalizedType,
+        paymentMethod: paymentMethod === 'CREDIT' ? 'CREDIT' : 'CASH',
         categoryId:
           normalizedType === 'EXPENSE' && typeof categoryId === 'string' && categoryId.length > 0
             ? categoryId

@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    const { amount, date, description, type, categoryId, suggestedCategoryName, suggestedCategoryColor } = await request.json();
+    const { amount, date, description, type, categoryId, paymentMethod, suggestedCategoryName, suggestedCategoryColor } = await request.json();
     const parsedAmount = Number(amount);
     const parsedDate = date ? new Date(date) : new Date();
     const normalizedType = type === 'INCOME' ? 'INCOME' : 'EXPENSE';
@@ -86,6 +86,7 @@ export async function POST(request: Request) {
         date: parsedDate,
         description: normalizedDescription,
         type: normalizedType,
+        paymentMethod: paymentMethod === 'CREDIT' ? 'CREDIT' : 'CASH',
         categoryId: resolvedCategoryId,
         userId: user.id,
       },

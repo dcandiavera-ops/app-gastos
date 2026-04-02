@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { CirclePlus, Pencil, ReceiptText, Save, X, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { CirclePlus, Pencil, ReceiptText, Save, X, ArrowDownLeft, ArrowUpRight, Wallet, HandCoins } from 'lucide-react';
 import type { TransactionRecord } from '@/lib/transaction-types';
 import { formatClp } from '@/lib/money';
 import { getCategoryIcon } from '@/lib/category-icons';
@@ -24,6 +24,7 @@ type EditableTransaction = {
   date: string;
   description: string;
   type: 'EXPENSE' | 'INCOME';
+  paymentMethod: 'CASH' | 'CREDIT';
   categoryId: string | null;
 };
 
@@ -42,6 +43,7 @@ function buildDraft(transaction: TransactionRecord): EditableTransaction {
     date: toInputDate(transaction.date),
     description: transaction.description,
     type: transaction.type === 'INCOME' ? 'INCOME' : 'EXPENSE',
+    paymentMethod: (transaction.paymentMethod as 'CASH' | 'CREDIT') || 'CASH',
     categoryId: transaction.categoryId ?? null,
   };
 }
@@ -93,6 +95,7 @@ export default function TransactionsEditorList({
           date: draft.date,
           description: draft.description,
           type: draft.type,
+          paymentMethod: draft.type === 'INCOME' ? 'CASH' : draft.paymentMethod,
           categoryId: draft.type === 'EXPENSE' ? draft.categoryId : null,
         }),
       });
@@ -184,7 +187,33 @@ export default function TransactionsEditorList({
                 </div>
 
                 {draft.type === 'EXPENSE' ? (
-                  <div className="flex flex-wrap gap-2 mt-2">
+                  <div className="space-y-2">
+                    <p className="text-[10px] uppercase font-bold text-on-surface-variant/70 tracking-wider">Cuenta</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setDraft({ ...draft, paymentMethod: 'CASH' })}
+                        className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${draft.paymentMethod === 'CASH' ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/5 text-on-surface-variant'}`}
+                        type="button"
+                      >
+                        <Wallet className="h-3 w-3" />
+                        Débito
+                      </button>
+                      <button
+                        onClick={() => setDraft({ ...draft, paymentMethod: 'CREDIT' })}
+                        className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${draft.paymentMethod === 'CREDIT' ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/5 text-on-surface-variant'}`}
+                        type="button"
+                      >
+                        <HandCoins className="h-3 w-3" />
+                        Crédito
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {draft.type === 'EXPENSE' ? (
+                  <div className="space-y-2 mt-2">
+                    <p className="text-[10px] uppercase font-bold text-on-surface-variant/70 tracking-wider">Categoria</p>
+                    <div className="flex flex-wrap gap-2">
                     {sortedCategories.map((category) => (
                       <button
                         key={category.id}
@@ -204,8 +233,9 @@ export default function TransactionsEditorList({
                       </button>
                     ))}
                   </div>
-                ) : null}
-                {error ? <p className="text-sm text-error">{error}</p> : null}
+                </div>
+              ) : null}
+              {error ? <p className="text-sm text-error">{error}</p> : null}
                 
                 <div className="flex gap-3 pt-2">
                   <button
@@ -248,6 +278,11 @@ export default function TransactionsEditorList({
                     <p className="text-[11px] text-on-surface-variant font-medium mt-0.5 truncate">
                       {new Date(tx.date).toLocaleDateString('es-CL')}
                       {tx.category ? ` · ${tx.category.name}` : ''}
+                      {tx.type === 'EXPENSE' && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[9px] uppercase font-bold text-primary/70">
+                          {tx.paymentMethod === 'CREDIT' ? 'Crédito' : 'Débito'}
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>

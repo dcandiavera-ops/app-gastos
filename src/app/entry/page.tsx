@@ -17,8 +17,15 @@ export default function ManualEntry() {
   const [type, setType] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CREDIT'>('CASH');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (type === 'INCOME') {
+      setPaymentMethod('CASH');
+    }
+  }, [type]);
 
   useEffect(() => {
     let ignore = false;
@@ -97,6 +104,7 @@ export default function ManualEntry() {
           amount: parseFloat(amount),
           description: description || (type === 'EXPENSE' ? 'Gasto manual' : 'Ingreso manual'),
           type,
+          paymentMethod,
           date: new Date().toISOString(),
           categoryId: type === 'EXPENSE' ? selectedCategoryId : null,
         }),
@@ -162,6 +170,33 @@ export default function ManualEntry() {
               Ingreso
             </button>
           </div>
+
+          {type === 'EXPENSE' && (
+            <div className="space-y-3 pt-2">
+              <p className="text-[10px] text-center uppercase tracking-[0.2em] text-on-surface/40 font-bold">
+                ¿Con qué pagaste?
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  onClick={() => setPaymentMethod('CASH')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm transition-all ${paymentMethod === 'CASH' ? 'bg-white/10 text-primary border border-primary/30 font-bold' : 'bg-surface-container-high text-on-surface/50 border border-transparent font-medium'}`}
+                  type="button"
+                >
+                  <Wallet className="h-4 w-4" />
+                  Débito
+                </button>
+                <button
+                  onClick={() => setPaymentMethod('CREDIT')}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm transition-all ${paymentMethod === 'CREDIT' ? 'bg-white/10 text-primary border border-primary/30 font-bold' : 'bg-surface-container-high text-on-surface/50 border border-transparent font-medium'}`}
+                  type="button"
+                >
+                  <HandCoins className="h-4 w-4" />
+                  Crédito
+                </button>
+              </div>
+            </div>
+          )}
+
           {type === 'EXPENSE' ? (
             <div className="space-y-3">
               <p className="text-[10px] text-center uppercase tracking-[0.2em] text-on-surface/40 font-bold">
