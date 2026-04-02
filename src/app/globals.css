@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Boldonse&display=swap');
 
 @theme {
   --color-surface: #0b1325;
@@ -52,6 +53,7 @@
   --font-headline: "Aptos Display", "Segoe UI Variable Display", "Trebuchet MS", sans-serif;
   --font-body: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
   --font-label: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --font-boldonse: "Boldonse", sans-serif;
 }
 
 @layer base {
