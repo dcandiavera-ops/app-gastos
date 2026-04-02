@@ -112,11 +112,23 @@ export default async function Dashboard() {
         </div>
 
         {/* Days remaining pill */}
-        <div className="flex items-center gap-2 mb-5 z-10">
+        <div className="flex items-center gap-2 mb-4 z-10">
           <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></div>
           <span className="text-xs font-semibold text-on-surface-variant">
             Quedan <span className="text-white font-bold">{daysRemaining} días</span> con este dinero
           </span>
+        </div>
+
+        {/* Stats row: Total budget + daily allowance */}
+        <div className="flex w-full gap-3 mb-5 z-10">
+          <div className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-2xl py-3 px-4 text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Presupuesto</p>
+            <p className="text-base font-bold text-white">${formatClp(monthlyBudget)}</p>
+          </div>
+          <div className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-2xl py-3 px-4 text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-on-surface-variant mb-1">Por día</p>
+            <p className="text-base font-bold text-primary">${formatClp(daysRemaining > 0 ? Math.max(0, remaining) / daysRemaining : 0)}</p>
+          </div>
         </div>
         
         <div className="flex w-full gap-4 px-2 z-10">

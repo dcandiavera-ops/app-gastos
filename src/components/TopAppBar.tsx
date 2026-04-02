@@ -55,8 +55,8 @@ export default function TopAppBar() {
           <Menu className="w-5 h-5" />
         </button>
         
-        <h1 className="text-xl font-bold text-white tracking-tight absolute left-1/2 -translate-x-1/2">
-          Hoy
+        <h1 className="text-lg font-bold text-white tracking-tight absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
+          {new Date().toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/^\w/, c => c.toUpperCase())}
         </h1>
 
         <Link href="/entry" className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-black active:scale-95 transition-transform shadow-[0_0_15px_rgba(253,224,71,0.4)]">
