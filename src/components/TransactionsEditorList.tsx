@@ -135,7 +135,7 @@ export default function TransactionsEditorList({
         return (
           <div
             key={tx.id}
-            className="glass-card rounded-[1.5rem] border border-outline-variant/20 p-5 transition-all"
+            className="supabase-card p-4 transition-all"
           >
             {isEditing ? (
               <div className="space-y-4">
@@ -143,54 +143,57 @@ export default function TransactionsEditorList({
                   <input
                     value={draft.amount}
                     onChange={(event) => setDraft({ ...draft, amount: event.target.value })}
-                    className="rounded-2xl border border-outline-variant/20 bg-surface-container-highest/60 px-4 py-3 outline-none"
+                    className="supabase-input w-full"
                     inputMode="decimal"
                     placeholder="Monto"
                   />
                   <input
                     value={draft.date}
                     onChange={(event) => setDraft({ ...draft, date: event.target.value })}
-                    className="rounded-2xl border border-outline-variant/20 bg-surface-container-highest/60 px-4 py-3 outline-none"
+                    className="supabase-input w-full"
                     type="date"
                   />
                 </div>
                 <input
                   value={draft.description}
                   onChange={(event) => setDraft({ ...draft, description: event.target.value })}
-                  className="w-full rounded-2xl border border-outline-variant/20 bg-surface-container-highest/60 px-4 py-3 outline-none"
+                  className="supabase-input w-full"
                   placeholder="Descripcion"
                 />
+                
                 <div className="flex flex-wrap gap-2">
+                  {/* Tipo de movimiento */}
                   <button
                     onClick={() => setDraft({ ...draft, type: 'EXPENSE' })}
-                    className={`rounded-full px-4 py-2 text-sm font-bold ${draft.type === 'EXPENSE' ? 'bg-primary text-on-primary' : 'bg-surface-container-highest/60 text-on-surface/70'}`}
+                    className={`supabase-btn text-xs px-3 py-1.5 rounded ${draft.type === 'EXPENSE' ? 'supabase-btn-primary' : ''}`}
                     type="button"
                   >
                     Gasto
                   </button>
                   <button
                     onClick={() => setDraft({ ...draft, type: 'INCOME', categoryId: null })}
-                    className={`rounded-full px-4 py-2 text-sm font-bold ${draft.type === 'INCOME' ? 'bg-primary text-on-primary' : 'bg-surface-container-highest/60 text-on-surface/70'}`}
+                    className={`supabase-btn text-xs px-3 py-1.5 rounded ${draft.type === 'INCOME' ? 'supabase-btn-primary' : ''}`}
                     type="button"
                   >
                     Ingreso
                   </button>
                 </div>
+
                 {draft.type === 'EXPENSE' ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     {sortedCategories.map((category) => (
                       <button
                         key={category.id}
                         onClick={() => setDraft({ ...draft, categoryId: category.id })}
-                        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold ${
+                        className={`supabase-btn text-xs px-2.5 py-1.5 rounded-full border flex items-center gap-1.5 ${
                           draft.categoryId === category.id
-                            ? 'border-primary/40 bg-primary/15 text-primary'
-                            : 'border-outline-variant/20 bg-surface-container-highest/60 text-on-surface/70'
+                            ? 'border-primary bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary'
+                            : ''
                         }`}
                         type="button"
                       >
                         <span
-                          className="h-2.5 w-2.5 rounded-full border border-white/10"
+                          className="h-2 w-2 rounded-full border border-white/10"
                           style={{ backgroundColor: category.color }}
                         />
                         {category.name}
@@ -199,10 +202,11 @@ export default function TransactionsEditorList({
                   </div>
                 ) : null}
                 {error ? <p className="text-sm text-error">{error}</p> : null}
-                <div className="flex gap-3">
+                
+                <div className="flex gap-3 pt-2">
                   <button
                     onClick={cancelEdit}
-                    className="flex-1 rounded-full border border-outline-variant/20 bg-surface-container-highest/60 px-4 py-3 text-sm font-bold"
+                    className="supabase-btn flex-1"
                     disabled={isSaving}
                     type="button"
                   >
@@ -213,13 +217,13 @@ export default function TransactionsEditorList({
                   </button>
                   <button
                     onClick={saveEdit}
-                    className="flex-1 rounded-full bg-primary px-4 py-3 text-sm font-bold text-on-primary"
+                    className="supabase-btn supabase-btn-primary flex-1"
                     disabled={isSaving}
                     type="button"
                   >
                     <span className="inline-flex items-center gap-2">
                       <Save className="h-4 w-4" />
-                      {isSaving ? 'Guardando...' : 'Guardar cambios'}
+                      {isSaving ? 'Guardando...' : 'Guardar'}
                     </span>
                   </button>
                 </div>
@@ -227,12 +231,12 @@ export default function TransactionsEditorList({
             ) : (
               <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-[1.2rem] ${tx.type === 'INCOME' ? 'bg-primary/20 text-primary' : 'bg-surface-container-highest text-on-surface/60'}`}>
-                    {tx.type === 'INCOME' ? <CirclePlus className="h-7 w-7" /> : <ReceiptText className="h-7 w-7" />}
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-md ${tx.type === 'INCOME' ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-surface-variant text-on-surface-variant border border-outline'}`}>
+                    {tx.type === 'INCOME' ? <CirclePlus className="h-5 w-5" /> : <ReceiptText className="h-5 w-5" />}
                   </div>
                   <div>
-                    <p className="font-bold text-lg">{tx.description || 'Movimiento'}</p>
-                    <p className="text-xs text-on-surface/50">
+                    <p className="font-semibold text-sm">{tx.description || 'Movimiento'}</p>
+                    <p className="text-xs text-on-surface-variant mt-0.5">
                       {new Date(tx.date).toLocaleDateString('es-CL')}
                       {tx.category ? ` • ${tx.category.name}` : ''}
                     </p>
@@ -240,16 +244,16 @@ export default function TransactionsEditorList({
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <p className={`text-xl font-extrabold ${tx.type === 'INCOME' ? 'text-primary' : 'text-on-surface'}`}>
+                    <p className={`text-base font-bold ${tx.type === 'INCOME' ? 'text-primary' : 'text-on-surface'}`}>
                       {tx.type === 'EXPENSE' ? '-' : '+'}${formatClp(tx.amount)}
                     </p>
                   </div>
                   <button
                     onClick={() => startEdit(tx)}
-                    className="rounded-full border border-outline-variant/20 bg-surface-container-highest/60 p-3 text-on-surface/70"
+                    className="supabase-btn h-8 w-8 p-0 rounded-md"
                     type="button"
                   >
-                    <Pencil className="h-4 w-4" />
+                    <Pencil className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>

@@ -32,10 +32,10 @@ export default function AuthButton({ email }: AuthButtonProps) {
     <button
       onClick={handleSignOut}
       disabled={isPending}
-      className="rounded-full border border-outline-variant/20 bg-surface-container-highest/60 px-4 py-2 text-right transition-colors hover:bg-surface-bright disabled:opacity-60"
+      className="supabase-btn flex flex-col items-end px-3 py-1 bg-surface-variant hover:bg-surface-variant/80 border-outline"
     >
-      <span className="block text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface/40">Sesion</span>
-      <span className="block max-w-44 truncate text-sm font-semibold text-on-surface">{email}</span>
+      <span className="text-[10px] font-medium uppercase tracking-wider text-on-surface-variant">Sesion</span>
+      <span className="max-w-[120px] truncate text-xs font-semibold text-on-surface">{email}</span>
     </button>
   );
 }

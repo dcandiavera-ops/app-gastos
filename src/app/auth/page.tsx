@@ -78,28 +78,23 @@ function AuthForm() {
   };
 
   return (
-    <section className="glass-card w-full max-w-md rounded-[2rem] border border-outline-variant/20 p-8 shadow-2xl">
-      <div className="space-y-3 text-center">
-        <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-bold">Gastos Personales</p>
-        <h1 className="text-4xl font-black tracking-tight">{mode === 'login' ? 'Entrar' : 'Crear cuenta'}</h1>
-        <p className="text-sm text-on-surface/60">
-          {mode === 'login'
-            ? 'Ingresa para usar tu panel privado de gastos.'
-            : 'Crea tu acceso personal para dejar la app publicada y privada.'}
-        </p>
+    <section className="supabase-card w-full max-w-sm p-8 mx-auto mt-12 mb-auto">
+      <div className="space-y-1 mb-6 text-center">
+        <p className="text-[10px] uppercase tracking-wider text-primary font-bold">Gastos Personales</p>
+        <h1 className="text-2xl font-bold tracking-tight">{mode === 'login' ? 'Bienvenido' : 'Crear cuenta'}</h1>
       </div>
 
-      <div className="mt-8 flex rounded-full bg-surface-container-highest/60 p-1">
+      <div className="flex bg-surface-variant/50 p-1 rounded-md mb-6">
         <button
           onClick={() => {
             setMode('login');
             setError('');
             setMessage('');
           }}
-          className={`flex-1 rounded-full px-4 py-3 text-sm font-bold transition-colors ${mode === 'login' ? 'bg-primary text-on-primary' : 'text-on-surface/60'}`}
+          className={`flex-1 rounded px-3 py-1.5 text-xs font-semibold transition-colors ${mode === 'login' ? 'bg-surface text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
           type="button"
         >
-          Iniciar sesion
+          Iniciar sesión
         </button>
         <button
           onClick={() => {
@@ -107,57 +102,63 @@ function AuthForm() {
             setError('');
             setMessage('');
           }}
-          className={`flex-1 rounded-full px-4 py-3 text-sm font-bold transition-colors ${mode === 'signup' ? 'bg-primary text-on-primary' : 'text-on-surface/60'}`}
+          className={`flex-1 rounded px-3 py-1.5 text-xs font-semibold transition-colors ${mode === 'signup' ? 'bg-surface text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
           type="button"
         >
           Registrarse
         </button>
       </div>
 
-      <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+      <form className="space-y-4" onSubmit={handleSubmit}>
         {mode === 'signup' ? (
-          <input
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            className="w-full rounded-2xl border border-outline-variant/20 bg-surface-container-highest/60 px-5 py-4 outline-none transition-colors focus:border-primary/40"
-            placeholder="Nombre"
-            type="text"
-          />
+          <div>
+            <label className="block text-xs font-medium text-on-surface-variant mb-1">Nombre</label>
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              className="supabase-input w-full"
+              type="text"
+            />
+          </div>
         ) : null}
 
-        <input
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          className="w-full rounded-2xl border border-outline-variant/20 bg-surface-container-highest/60 px-5 py-4 outline-none transition-colors focus:border-primary/40"
-          placeholder="Correo"
-          type="email"
-          required
-        />
+        <div>
+           <label className="block text-xs font-medium text-on-surface-variant mb-1">Correo Electrónico</label>
+          <input
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            className="supabase-input w-full"
+            type="email"
+            required
+          />
+        </div>
 
-        <input
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-2xl border border-outline-variant/20 bg-surface-container-highest/60 px-5 py-4 outline-none transition-colors focus:border-primary/40"
-          placeholder="Contrasena"
-          type="password"
-          minLength={6}
-          required
-        />
+        <div>
+          <label className="block text-xs font-medium text-on-surface-variant mb-1">Contraseña</label>
+          <input
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="supabase-input w-full"
+            type="password"
+            minLength={6}
+            required
+          />
+        </div>
 
         {message ? (
-          <div className="rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm text-primary">
+          <div className="rounded-md border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-primary">
             {message}
           </div>
         ) : null}
 
         {error ? (
-          <div className="rounded-2xl border border-error/30 bg-error/10 px-4 py-3 text-sm text-error">
+          <div className="rounded-md border border-error/30 bg-error/10 px-3 py-2 text-xs text-error">
             {error}
           </div>
         ) : null}
 
         <button
-          className="w-full rounded-full bg-primary px-5 py-4 text-base font-black text-on-primary transition-transform active:scale-95 disabled:opacity-60"
+          className="supabase-btn supabase-btn-primary w-full py-2.5 mt-2"
           disabled={isSubmitting}
           type="submit"
         >
@@ -174,14 +175,14 @@ function AuthForm() {
 
 function AuthFormFallback() {
   return (
-    <section className="glass-card w-full max-w-md rounded-[2rem] border border-outline-variant/20 p-8 shadow-2xl">
+    <section className="supabase-card w-full max-w-sm p-8 mx-auto mt-12 mb-auto">
       <div className="animate-pulse space-y-4">
-        <div className="h-4 w-32 rounded bg-surface-container-highest/70"></div>
-        <div className="h-10 w-48 rounded bg-surface-container-highest/70"></div>
-        <div className="h-12 w-full rounded-full bg-surface-container-highest/70"></div>
-        <div className="h-14 w-full rounded-2xl bg-surface-container-highest/70"></div>
-        <div className="h-14 w-full rounded-2xl bg-surface-container-highest/70"></div>
-        <div className="h-14 w-full rounded-full bg-surface-container-highest/70"></div>
+        <div className="h-4 w-32 rounded bg-surface-variant mx-auto"></div>
+        <div className="h-8 w-48 rounded bg-surface-variant mx-auto"></div>
+        <div className="h-10 w-full rounded-md bg-surface-variant mt-6"></div>
+        <div className="h-10 w-full rounded-md bg-surface-variant mt-4"></div>
+        <div className="h-10 w-full rounded-md bg-surface-variant"></div>
+        <div className="h-10 w-full rounded-md bg-surface-variant mt-6"></div>
       </div>
     </section>
   );

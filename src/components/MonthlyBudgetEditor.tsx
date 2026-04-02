@@ -57,13 +57,13 @@ export default function MonthlyBudgetEditor({ initialValue }: MonthlyBudgetEdito
     <div className="space-y-2">
       <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
         {isEditing ? (
-          <>
-            <div className="flex items-center rounded-full border border-primary/30 bg-surface-container-highest/60 px-4 py-3 shadow-inner">
-              <span className="mr-2 text-lg font-black text-primary">$</span>
+          <div className="flex items-center gap-2 bg-surface-variant/30 p-2 rounded-lg border border-outline/50">
+            <div className="relative flex items-center">
+              <span className="absolute left-3 text-sm font-semibold text-on-surface-variant">$</span>
               <input
                 value={draftValue}
                 onChange={(event) => setDraftValue(event.target.value)}
-                className="w-36 bg-transparent text-center text-lg font-black outline-none"
+                className="supabase-input pl-7 w-32 text-left text-sm font-semibold h-9"
                 inputMode="numeric"
                 placeholder="1000000"
               />
@@ -72,35 +72,35 @@ export default function MonthlyBudgetEditor({ initialValue }: MonthlyBudgetEdito
               <button
                 onClick={handleSave}
                 disabled={isPending}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-primary/30 bg-primary/15 text-primary transition-colors hover:bg-primary/25 disabled:opacity-60"
+                className="supabase-btn supabase-btn-primary h-9 w-9 p-0"
                 type="button"
               >
-                <Check className="h-5 w-5" />
+                <Check className="h-4 w-4" />
               </button>
               <button
                 onClick={handleCancel}
                 disabled={isPending}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-highest/60 text-on-surface/70 transition-colors hover:bg-surface-bright disabled:opacity-60"
+                className="supabase-btn h-9 w-9 p-0"
                 type="button"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
-          </>
+          </div>
         ) : (
-          <>
-            <p className="text-sm font-bold text-on-surface/50 bg-surface-container-highest/30 px-4 py-1 rounded-full border border-outline-variant/10">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            <p className="text-sm font-medium text-on-surface-variant">
               de ${formatClp(budgetValue)} presupuestado este mes
             </p>
             <button
               onClick={() => setIsEditing(true)}
-              className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary transition-colors hover:bg-primary/20"
+              className="supabase-btn text-xs gap-1.5 py-1.5 px-3"
               type="button"
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <Pencil className="h-3 w-3" />
               Editar presupuesto
             </button>
-          </>
+          </div>
         )}
       </div>
 

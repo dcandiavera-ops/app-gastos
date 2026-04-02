@@ -293,7 +293,7 @@ export default function Scanner() {
       </div>
 
       <div className="w-full px-6 mb-8">
-        <div className="relative w-full aspect-[4/3] rounded-[2rem] overflow-hidden bg-[#060e20] shadow-2xl border border-outline-variant/20">
+        <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-[#111] shadow-lg border border-outline">
           {previewUrl ? (
             <div
               aria-label="Vista previa de la boleta"
@@ -302,20 +302,20 @@ export default function Scanner() {
             ></div>
           ) : (
             <div className="absolute inset-0 flex flex-col gap-4 items-center justify-center">
-              <Camera className="h-10 w-10 animate-pulse text-on-surface/30" />
-              <p className="text-on-surface/50 font-medium tracking-widest text-xs uppercase">Carga una boleta desde el celular o navegador</p>
+              <Camera className="h-10 w-10 text-on-surface-variant/50" />
+              <p className="text-on-surface-variant font-medium tracking-wider text-xs uppercase">Carga una boleta</p>
             </div>
           )}
 
-          <div className="absolute inset-4 rounded-[1.5rem] border-[1px] border-white/20 flex flex-col items-center justify-end pb-6">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-white/10 rounded-[1rem] flex items-center justify-center">
-              <div className="w-2 h-2 bg-primary rounded-full shadow-[0_0_10px_rgba(170,255,220,1)] hover:scale-150 transition-transform cursor-crosshair"></div>
+          <div className="absolute inset-4 rounded-md border border-outline-variant flex flex-col items-center justify-end pb-6">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 border border-white/10 rounded flex items-center justify-center">
+              <div className="w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_8px_rgba(62,207,142,0.8)]"></div>
             </div>
 
             {isScanning ? (
-              <div className="bg-surface/90 px-6 py-3 rounded-full border border-primary/50 shadow-[0_0_30px_rgba(170,255,220,0.4)] flex items-center gap-3">
-                <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
-                <span className="font-bold tracking-widest text-[10px] uppercase text-primary">Analizando boleta...</span>
+              <div className="bg-surface/95 px-5 py-2 rounded-md border border-primary/30 flex items-center gap-3">
+                <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
+                <span className="font-semibold tracking-wider text-[10px] uppercase text-primary">Analizando...</span>
               </div>
             ) : (
               <label className="cursor-pointer">
@@ -326,9 +326,9 @@ export default function Scanner() {
                   capture="environment"
                   onChange={handleFileChange}
                 />
-                <span className="inline-flex items-center gap-3 px-6 py-4 bg-white/10 backdrop-blur-md rounded-full border-2 border-white/50 hover:bg-white/20 active:scale-90 transition-all shadow-lg">
-                  <Upload className="h-5 w-5" />
-                  Subir boleta
+                <span className="inline-flex items-center gap-2 px-5 py-3 bg-surface-variant/90 backdrop-blur-md rounded-md border border-outline hover:bg-surface-variant transition-colors shadow-sm">
+                  <Upload className="h-4 w-4 text-on-surface" />
+                  <span className="text-sm font-medium text-on-surface">Subir boleta</span>
                 </span>
               </label>
             )}
@@ -345,63 +345,43 @@ export default function Scanner() {
           <span className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">OCR.space gratis</span>
         </div>
 
-        <div className="bg-surface-container-lowest rounded-[2rem] border border-outline-variant/10 p-5 space-y-4">
+        <div className="supabase-card p-5 space-y-4">
           {error ? (
-            <div className="rounded-2xl border border-error/30 bg-error/10 px-4 py-3 text-error text-sm">
+            <div className="rounded-md border border-error/30 bg-error/10 px-4 py-3 text-error text-sm">
               {error}
             </div>
           ) : null}
 
           {receipt ? (
-            <>
-              <div className="glass-card p-5 rounded-2xl border border-outline-variant/20">
+            <div className="space-y-4">
+              <div className="supabase-card p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Comercio</p>
-                    <p className="text-2xl font-black mt-2">{receipt.merchant}</p>
+                    <p className="text-xs uppercase tracking-wider text-on-surface-variant font-medium">Comercio</p>
+                    <p className="text-xl font-bold mt-1">{receipt.merchant}</p>
                   </div>
-                  <div className="rounded-full bg-primary/10 border border-primary/20 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-primary font-bold">
+                  <div className="rounded border border-primary/20 px-3 py-1 text-[10px] uppercase text-primary font-medium bg-primary/10">
                     {confidenceLabel}
                   </div>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-4 mt-6">
-                  <div className="rounded-2xl bg-surface-container-highest/50 px-4 py-4 border border-outline-variant/20">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Monto detectado</p>
-                    <p className="text-2xl font-black mt-2">
+                  <div className="rounded-md bg-surface-variant/50 px-4 py-3 border border-outline">
+                    <p className="text-xs uppercase tracking-wider text-on-surface-variant font-medium">Monto detectado</p>
+                    <p className="text-xl font-bold mt-1 text-primary">
                       {receipt.amount !== null ? `$${new Intl.NumberFormat('es-CL').format(receipt.amount)}` : 'No detectado'}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-surface-container-highest/50 px-4 py-4 border border-outline-variant/20">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Fecha detectada</p>
-                    <p className="text-2xl font-black mt-2">
+                  <div className="rounded-md bg-surface-variant/50 px-4 py-3 border border-outline">
+                    <p className="text-xs uppercase tracking-wider text-on-surface-variant font-medium">Fecha detectada</p>
+                    <p className="text-xl font-bold mt-1">
                       {receipt.date ? new Date(receipt.date).toLocaleDateString('es-CL') : 'No detectada'}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-4 rounded-2xl bg-surface-container-highest/50 px-4 py-4 border border-outline-variant/20">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Categoria sugerida</p>
-                  {receipt.suggestedCategory ? (
-                    <div className="mt-3 flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="h-3.5 w-3.5 rounded-full border border-white/10"
-                          style={{ backgroundColor: receipt.suggestedCategory.color }}
-                        />
-                        <p className="text-lg font-black">{receipt.suggestedCategory.name}</p>
-                      </div>
-                      <span className="rounded-full bg-primary/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
-                        {receipt.suggestedCategory.confidence === 'high' ? 'Alta confianza' : 'Sugerida'}
-                      </span>
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-sm text-on-surface/60">No se pudo inferir una categoria automaticamente.</p>
-                  )}
-                </div>
-
-                <div className="mt-4 rounded-2xl bg-surface-container-highest/50 px-4 py-4 border border-outline-variant/20">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Categoria para guardar</p>
+                <div className="mt-4 rounded-md bg-surface-variant/50 px-4 py-3 border border-outline">
+                  <p className="text-xs uppercase tracking-wider text-on-surface-variant font-medium">Categoria para guardar</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     {categories.map((category) => {
                       const isSelected = selectedCategoryName === category.name;
@@ -410,15 +390,15 @@ export default function Scanner() {
                         <button
                           key={category.name}
                           onClick={() => setSelectedCategoryName(category.name)}
-                          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-bold transition-all ${
+                          className={`supabase-btn text-xs px-2.5 py-1.5 rounded-full border flex items-center gap-1.5 ${
                             isSelected
-                              ? 'border-primary/40 bg-primary/15 text-primary'
-                              : 'border-outline-variant/20 bg-surface text-on-surface/70'
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : ''
                           }`}
                           type="button"
                         >
                           <span
-                            className="h-2.5 w-2.5 rounded-full border border-white/10"
+                            className="h-2 w-2 rounded-full border border-white/10"
                             style={{ backgroundColor: category.color }}
                           />
                           {category.name}
@@ -428,35 +408,39 @@ export default function Scanner() {
                   </div>
                 </div>
 
-                <div className="mt-6 space-y-3">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Texto OCR</p>
-                  <pre className="whitespace-pre-wrap text-sm text-on-surface/70 bg-surface-container-highest/40 rounded-2xl p-4 border border-outline-variant/20 max-h-64 overflow-auto">{receipt.rawText}</pre>
+                <div className="mt-6 space-y-2">
+                  <p className="text-xs uppercase tracking-wider text-on-surface-variant font-medium">Texto OCR</p>
+                  <pre className="whitespace-pre-wrap text-[10px] text-on-surface-variant bg-background rounded-md p-3 border border-outline max-h-40 overflow-auto">{receipt.rawText}</pre>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex gap-3">
                 <button
                   onClick={handleCancel}
                   disabled={isSaving}
-                  className="w-full bg-surface-container-highest text-on-surface font-extrabold text-lg py-5 rounded-full border border-outline-variant/20 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-3"
+                  className="supabase-btn flex-1 py-3"
                 >
-                  <X className="h-5 w-5" />
-                  Cancelar
+                  <span className="flex items-center justify-center gap-2">
+                    <X className="h-4 w-4" />
+                    Cancelar
+                  </span>
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={isSaving || receipt.amount === null}
-                  className="w-full bg-primary text-surface font-extrabold text-lg py-5 rounded-full shadow-[0_12px_24px_rgba(170,255,220,0.2)] active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-3"
+                  className="supabase-btn supabase-btn-primary flex-1 py-3"
                 >
-                  {isSaving ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-                  {isSaving ? 'Guardando...' : 'Guardar como gasto'}
+                  <span className="flex items-center justify-center gap-2">
+                    {isSaving ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    {isSaving ? 'Guardando...' : 'Guardar gasto'}
+                  </span>
                 </button>
               </div>
-            </>
+            </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-outline-variant/30 px-5 py-10 text-center">
-              <p className="font-bold">Sube una foto de la boleta para extraer los datos.</p>
-              <p className="text-sm text-on-surface/50 mt-2">No se guarda ninguna imagen en la app. Solo se envia al OCR para leer texto.</p>
+            <div className="rounded-md border border-dashed border-outline px-5 py-10 text-center">
+              <p className="font-medium text-sm text-on-surface">Sube una foto de la boleta para extraer los datos.</p>
+              <p className="text-xs text-on-surface-variant mt-2">No se guarda ninguna imagen en la app. Solo se envia al OCR para leer texto.</p>
             </div>
           )}
         </div>

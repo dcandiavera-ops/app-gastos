@@ -89,55 +89,48 @@ export default async function Dashboard() {
 
   return (
     <main className="pt-28 pb-32 px-6 max-w-7xl mx-auto space-y-8">
-      <section className="relative glass-card p-10 rounded-[2.5rem] overflow-hidden border border-outline-variant/30 shadow-2xl flex flex-col items-center justify-center text-center">
-        <div className="absolute -top-32 -right-32 w-96 h-96 wealth-orb opacity-50"></div>
-        <div className="absolute -bottom-20 -left-20 w-64 h-64 wealth-orb opacity-30"></div>
-
-        <div className="relative z-10 space-y-6 w-full">
-          <p className="font-extrabold text-on-surface/60 tracking-[0.3em] uppercase text-[10px] inline-flex items-center gap-2 bg-surface-container-highest/50 px-5 py-2 rounded-full border border-outline-variant/20 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(170,255,220,1)]"></span>
+      <section className="relative supabase-card p-10 rounded-2xl flex flex-col items-center justify-center text-center">
+        <div className="relative z-10 w-full space-y-6">
+          <p className="font-semibold text-on-surface-variant tracking-wider uppercase text-xs inline-flex items-center gap-2 bg-surface-variant/40 px-4 py-1.5 rounded-full border border-outline/50">
+            <span className={`w-2 h-2 rounded-full ${actualSpent > budget ? 'bg-error' : 'bg-primary'}`}></span>
             Presupuesto mensual
           </p>
 
-          <div className="flex flex-col items-center justify-center gap-1">
-            <h2 className="text-xl font-bold text-on-surface/70 tracking-widest uppercase text-[10px]">Total gastado</h2>
-            <div className={`flex items-center justify-center gap-2 mt-4 neon-3d-text-container ${actualSpent > budget ? 'error-neon' : 'primary-neon'}`}>
-              <span className="text-2xl md:text-3xl font-normal font-['Boldonse'] text-transparent" style={{ WebkitTextStroke: '1.5px var(--neon-color)' }}>$</span>
-              <h1 
-                className="text-4xl md:text-6xl font-normal tracking-wide leading-none font-['Boldonse'] pb-2 lg:pb-3 neon-3d-text"
-                data-text={formatClp(actualSpent)}
-              >
+          <div className="flex flex-col items-center justify-center gap-2">
+            <h2 className="text-sm font-medium text-on-surface-variant uppercase tracking-wide">Total gastado</h2>
+            <div className="flex items-baseline justify-center gap-2 mt-2">
+              <span className={`text-3xl md:text-5xl supabase-hero-number ${actualSpent > budget ? 'error' : 'primary'}`}>$</span>
+              <h1 className={`text-6xl md:text-[5.5rem] supabase-hero-number ${actualSpent > budget ? 'error' : 'primary'}`}>
                 {formatClp(actualSpent)}
               </h1>
             </div>
-            <div className="mt-3">
+            <div className="mt-4">
               <MonthlyBudgetEditor initialValue={budget} />
             </div>
           </div>
 
-          <div className="w-full max-w-md mx-auto h-5 bg-[#060e20]/80 backdrop-blur-2xl rounded-full border border-outline-variant/30 p-1 relative overflow-hidden shadow-inner mt-6">
+          <div className="w-full max-w-md mx-auto h-3 bg-surface-variant rounded-full border border-outline relative overflow-hidden mt-8">
             <div
-              className={`h-full rounded-full relative overflow-hidden transition-all duration-1000 ease-out flex items-center justify-end px-2 ${progressBarColor}`}
+              className={`h-full rounded-full transition-all duration-1000 ease-out ${actualSpent > budget ? 'bg-error' : 'bg-primary'}`}
               style={{ width: `${percentage}%` }}
             >
-              <div className="absolute top-0 right-0 bottom-0 left-0 bg-gradient-to-r from-transparent via-white/40 to-transparent w-[300%] animate-[scan_3s_linear_infinite]"></div>
             </div>
           </div>
 
-          <div className="flex justify-center mt-6">
-            <div className={`inline-flex items-center gap-4 px-6 py-4 rounded-2xl bg-surface-container-highest/60 border border-outline-variant/20 backdrop-blur-lg shadow-xl ${alertColor}`}>
-              <AlertIcon className="h-8 w-8 animate-bounce" />
-              <p className="font-black text-sm md:text-base tracking-wide text-left">{alertMessage}</p>
+          <div className="flex justify-center mt-8">
+            <div className={`inline-flex items-center gap-3 px-5 py-3 rounded-lg border border-outline bg-surface-variant/30 ${alertColor}`}>
+              <AlertIcon className="h-5 w-5" />
+              <p className="font-medium text-sm md:text-base text-on-surface">{alertMessage}</p>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-4 pt-4">
-            <div className="rounded-2xl bg-surface-container-highest/50 border border-outline-variant/20 px-5 py-4 text-left">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Ingresos del mes</p>
-              <p className="text-2xl font-black mt-2 text-primary">+${formatClp(actualIncome)}</p>
+          <div className="grid md:grid-cols-3 gap-4 pt-6">
+            <div className="rounded-xl supabase-card px-5 py-4 text-left">
+              <p className="text-xs uppercase tracking-wider text-on-surface-variant font-medium">Ingresos del mes</p>
+              <p className="text-xl font-bold mt-1 text-primary">+${formatClp(actualIncome)}</p>
             </div>
-            <div className="rounded-2xl bg-surface-container-highest/50 border border-outline-variant/20 px-5 py-4 text-left">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-on-surface/40 font-bold">Disponible</p>
+            <div className="rounded-xl supabase-card px-5 py-4 text-left">
+              <p className="text-xs uppercase tracking-wider text-on-surface-variant font-medium">Disponible</p>
               <p className="text-2xl font-black mt-2">{remaining >= 0 ? '$' : '-$'}{formatClp(Math.abs(remaining))}</p>
             </div>
             <div className="rounded-2xl bg-surface-container-highest/50 border border-outline-variant/20 px-5 py-4 text-left">

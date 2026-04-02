@@ -26,9 +26,9 @@ export default function ExportButton({ transactions }: { transactions: Transacti
   return (
     <button
       onClick={exportToCSV}
-      className="flex items-center gap-2 px-5 py-2.5 bg-primary/10 hover:bg-primary/20 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors border border-primary/30 text-primary active:scale-95 shadow-[0_0_15px_rgba(170,255,220,0.15)]"
+      className="supabase-btn text-xs gap-2 py-1.5 px-3 rounded-md"
     >
-      <Download className="h-[18px] w-[18px]" />
+      <Download className="h-[14px] w-[14px]" />
       Excel CSV
     </button>
   );
