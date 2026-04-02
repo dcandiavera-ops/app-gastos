@@ -141,7 +141,7 @@ export default async function Dashboard() {
         </div>
       </section>
 
-      <div className="glass-card p-6 md:p-8 rounded-[2rem] border border-outline-variant/20 shadow-xl">
+      <div className="supabase-card p-6 md:p-8">
         <div className="flex justify-between items-center mb-8 px-2">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary shadow-inner">
