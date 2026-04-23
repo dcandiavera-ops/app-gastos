@@ -19,6 +19,8 @@ export default async function Dashboard() {
   let spentOnCredit = 0;
   let spentOnDebit = 0;
   let totalIncome = 0;
+  let debitIncome = 0;
+  let creditIncome = 0;
   let creditBudget = 170000;
   let creditRemaining = 0;
   let debitBalance = 0;
@@ -31,7 +33,8 @@ export default async function Dashboard() {
     const dbUser = await ensureDbUser(user);
     const monthStart = startOfCurrentMonth();
 
-    const [recentTransactionsResult, expenseAggregates, incomeAggregate, categoryExpenses] = await Promise.all([
+    // Use separate fetches or handle errors within Promise.all to prevent total failure
+    const results = await Promise.allSettled([
       prisma.transaction.findMany({
         where: { userId: user.id },
         orderBy: { date: 'desc' },
@@ -47,7 +50,8 @@ export default async function Dashboard() {
           date: { gte: monthStart },
         },
       }),
-      prisma.transaction.aggregate({
+      prisma.transaction.groupBy({
+        by: ['paymentMethod'],
         _sum: { amount: true },
         where: {
           userId: user.id,
@@ -65,18 +69,33 @@ export default async function Dashboard() {
       }),
     ]);
 
+    const recentTransactionsResult = results[0].status === 'fulfilled' ? results[0].value : [];
+    const expenseAggregates = results[1].status === 'fulfilled' ? results[1].value : [];
+    const incomeAggregates = results[2].status === 'fulfilled' ? results[2].value : [];
+    const categoryExpenses = (results[3].status === 'fulfilled' ? results[3].value : []) as any[];
+
+    if (results.some(r => r.status === 'rejected')) {
+      console.error('Some dashboard queries failed:', results.filter(r => r.status === 'rejected'));
+    }
+
     spentOnCredit = expenseAggregates.find(a => a.paymentMethod === 'CREDIT')?._sum.amount ?? 0;
     spentOnDebit = expenseAggregates
       .filter(a => a.paymentMethod !== 'CREDIT')
       .reduce((acc, a) => acc + (a._sum.amount ?? 0), 0);
-    totalIncome = incomeAggregate._sum.amount ?? 0;
+
+    // Split income by payment method
+    debitIncome = incomeAggregates
+      .filter(a => a.paymentMethod !== 'CREDIT')
+      .reduce((acc, a) => acc + (a._sum.amount ?? 0), 0);
+    creditIncome = incomeAggregates.find(a => a.paymentMethod === 'CREDIT')?._sum.amount ?? 0;
+    totalIncome = debitIncome + creditIncome;
 
     creditBudget = dbUser.creditBudget || 170000;
-    creditRemaining = Math.max(0, creditBudget - spentOnCredit);
-    debitBalance = totalIncome - spentOnDebit;
+    creditRemaining = Math.max(0, creditBudget + creditIncome - spentOnCredit);
+    debitBalance = debitIncome - spentOnDebit;
 
     monthlyBudget = creditBudget + totalIncome;
-    recentTransactions = recentTransactionsResult;
+    recentTransactions = recentTransactionsResult as TransactionRecord[];
     actualSpent = spentOnCredit + spentOnDebit;
     remaining = creditRemaining + debitBalance;
 
@@ -97,7 +116,7 @@ export default async function Dashboard() {
       .map(c => ({ ...c, total: c.creditSpent + c.debitSpent }))
       .sort((a, b) => b.total - a.total);
   } catch (error) {
-    console.error('Dashboard load error:', error);
+    console.error('Critical Dashboard load error:', error);
   }
 
   // Calendar tape (last 7 days)
@@ -116,7 +135,8 @@ export default async function Dashboard() {
   const percentage = monthlyBudget > 0 ? Math.min(100, 100 - Math.round((actualSpent / monthlyBudget) * 100)) : 100;
   const strokeDasharray = 283;
   const strokeDashoffset = strokeDasharray - (strokeDasharray * Math.max(0, percentage)) / 100;
-  const creditUsedPct = creditBudget > 0 ? Math.min(100, Math.round((spentOnCredit / creditBudget) * 100)) : 0;
+  const totalCreditAvailable = creditBudget + creditIncome;
+  const creditUsedPct = totalCreditAvailable > 0 ? Math.min(100, Math.round((spentOnCredit / totalCreditAvailable) * 100)) : 0;
 
   return (
     <main className="pt-[100px] pb-32 px-4 max-w-sm mx-auto space-y-5 flex flex-col items-center">
@@ -183,7 +203,7 @@ export default async function Dashboard() {
             </div>
             <div>
               <p className="text-xs font-bold text-white">Tarjeta de Crédito</p>
-              <p className="text-[10px] font-semibold text-on-surface-variant">Cupo: ${formatClp(creditBudget)}</p>
+              <p className="text-[10px] font-semibold text-on-surface-variant">Cupo: ${formatClp(creditBudget)}{creditIncome > 0 ? ` + $${formatClp(creditIncome)} ingresado` : ''}</p>
             </div>
           </div>
           <div className="text-right">
@@ -215,7 +235,7 @@ export default async function Dashboard() {
             </div>
             <div>
               <p className="text-xs font-bold text-white">Débito / Efectivo</p>
-              <p className="text-[10px] font-semibold text-on-surface-variant">Ingresos: ${formatClp(totalIncome)}</p>
+              <p className="text-[10px] font-semibold text-on-surface-variant">Ingresos: ${formatClp(debitIncome)}</p>
             </div>
           </div>
           <div className="text-right">
@@ -229,7 +249,7 @@ export default async function Dashboard() {
             <p className="text-[9px] uppercase font-bold tracking-wider text-on-surface-variant mb-0.5 flex items-center justify-center gap-1">
               <TrendingUp className="w-2.5 h-2.5 text-emerald-400" /> Entradas
             </p>
-            <p className="text-sm font-bold text-emerald-400">+${formatClp(totalIncome)}</p>
+            <p className="text-sm font-bold text-emerald-400">+${formatClp(debitIncome)}</p>
           </div>
           <div className="flex-1 bg-white/[0.04] border border-white/[0.06] rounded-xl py-2 px-3 text-center">
             <p className="text-[9px] uppercase font-bold tracking-wider text-on-surface-variant mb-0.5 flex items-center justify-center gap-1">
@@ -300,6 +320,14 @@ export default async function Dashboard() {
             </span>
             <span className="text-sm font-bold text-white">${formatClp(creditBudget)}</span>
           </div>
+          {creditIncome > 0 && (
+            <div className="flex justify-between items-center py-1.5">
+              <span className="text-xs font-semibold text-on-surface-variant flex items-center gap-2">
+                <TrendingUp className="w-3 h-3 text-amber-400" /> Ingreso a Crédito
+              </span>
+              <span className="text-sm font-bold text-amber-400">+${formatClp(creditIncome)}</span>
+            </div>
+          )}
           <div className="flex justify-between items-center py-1.5">
             <span className="text-xs font-semibold text-on-surface-variant flex items-center gap-2">
               <TrendingDown className="w-3 h-3 text-red-400" /> Gastado Crédito
@@ -309,15 +337,28 @@ export default async function Dashboard() {
           <div className="h-px bg-white/[0.06]"></div>
           <div className="flex justify-between items-center py-1.5">
             <span className="text-xs font-semibold text-on-surface-variant flex items-center gap-2">
-              <PiggyBank className="w-3 h-3 text-emerald-400" /> Ingresos Efectivo
+              <PiggyBank className="w-3 h-3 text-emerald-400" /> Ingresos Débito
             </span>
-            <span className="text-sm font-bold text-emerald-400">+${formatClp(totalIncome)}</span>
+            <span className="text-sm font-bold text-emerald-400">+${formatClp(debitIncome)}</span>
           </div>
           <div className="flex justify-between items-center py-1.5">
             <span className="text-xs font-semibold text-on-surface-variant flex items-center gap-2">
               <TrendingDown className="w-3 h-3 text-red-400" /> Gastado Débito
             </span>
             <span className="text-sm font-bold text-white">-${formatClp(spentOnDebit)}</span>
+          </div>
+          <div className="h-px bg-white/[0.06]"></div>
+          <div className="flex justify-between items-center py-1.5">
+            <span className="text-xs font-bold text-emerald-400 flex items-center gap-2">
+              <Wallet className="w-3 h-3" /> Saldo Débito
+            </span>
+            <span className={`text-sm font-bold ${debitBalance >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>${formatClp(debitBalance)}</span>
+          </div>
+          <div className="flex justify-between items-center py-1.5">
+            <span className="text-xs font-bold text-amber-400 flex items-center gap-2">
+              <CreditCard className="w-3 h-3" /> Saldo Crédito
+            </span>
+            <span className="text-sm font-bold text-amber-400">${formatClp(creditRemaining)}</span>
           </div>
           <div className="h-px bg-white/[0.06]"></div>
           <div className="flex justify-between items-center py-1.5">
@@ -354,11 +395,9 @@ export default async function Dashboard() {
                   <p className="text-[11px] text-on-surface-variant font-medium mt-0.5 truncate">
                     {new Date(tx.date).toLocaleDateString('es-CL', { month: 'short', day: 'numeric'})}
                     {tx.category && ` · ${tx.category.name}`}
-                    {tx.type === 'EXPENSE' && (
-                      <span className={`ml-1.5 px-1 py-0.5 rounded text-[9px] uppercase font-bold ${tx.paymentMethod === 'CREDIT' ? 'text-amber-400 bg-amber-500/10' : 'text-emerald-400 bg-emerald-500/10'}`}>
+                    <span className={`ml-1.5 px-1 py-0.5 rounded text-[9px] uppercase font-bold ${tx.paymentMethod === 'CREDIT' ? 'text-amber-400 bg-amber-500/10' : 'text-emerald-400 bg-emerald-500/10'}`}>
                         {tx.paymentMethod === 'CREDIT' ? 'crédito' : 'débito'}
                       </span>
-                    )}
                   </p>
                 </div>
               </div>

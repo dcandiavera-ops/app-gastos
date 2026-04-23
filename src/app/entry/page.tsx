@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Delete, HandCoins, LoaderCircle, Save, Store, Wallet } from 'lucide-react';
+import { CreditCard, Delete, HandCoins, LoaderCircle, Save, Store, Wallet } from 'lucide-react';
 
 type Category = {
   id: string;
@@ -20,12 +20,8 @@ export default function ManualEntry() {
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CREDIT'>('CASH');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (type === 'INCOME') {
-      setPaymentMethod('CASH');
-    }
-  }, [type]);
+  const backspaceInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const backspaceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -76,9 +72,36 @@ export default function ManualEntry() {
     }
   }, [categories, selectedCategoryId, type]);
 
+  const doBackspace = useCallback(() => {
+    setAmount((prev) => (prev.length > 1 ? prev.slice(0, -1) : '0'));
+  }, []);
+
+  const handleBackspaceStart = useCallback(() => {
+    doBackspace();
+    backspaceTimeout.current = setTimeout(() => {
+      backspaceInterval.current = setInterval(doBackspace, 100);
+    }, 400);
+  }, [doBackspace]);
+
+  const handleBackspaceEnd = useCallback(() => {
+    if (backspaceTimeout.current) {
+      clearTimeout(backspaceTimeout.current);
+      backspaceTimeout.current = null;
+    }
+    if (backspaceInterval.current) {
+      clearInterval(backspaceInterval.current);
+      backspaceInterval.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      handleBackspaceEnd();
+    };
+  }, [handleBackspaceEnd]);
+
   const handleNumpadClick = (value: string) => {
     if (value === 'backspace') {
-      setAmount((prev) => (prev.length > 1 ? prev.slice(0, -1) : '0'));
       return;
     }
 
@@ -157,45 +180,44 @@ export default function ManualEntry() {
           <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => setType('EXPENSE')}
-              className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-full text-sm transition-all ${type === 'EXPENSE' ? 'bg-primary text-surface font-bold active-glow' : 'bg-surface-container-high text-on-surface/60 font-medium ghost-border'}`}
+              className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-full text-sm transition-all ${type === 'EXPENSE' ? 'bg-primary text-surface font-bold shadow-[0_4px_14px_rgba(253,224,71,0.25)]' : 'bg-white/[0.05] text-on-surface/60 font-medium border border-white/[0.08]'}`}
             >
               <HandCoins className="h-[18px] w-[18px]" />
               Gasto
             </button>
             <button
               onClick={() => setType('INCOME')}
-              className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-full text-sm transition-all ${type === 'INCOME' ? 'bg-primary text-surface font-bold active-glow' : 'bg-surface-container-high text-on-surface/60 font-medium ghost-border'}`}
+              className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-full text-sm transition-all ${type === 'INCOME' ? 'bg-primary text-surface font-bold shadow-[0_4px_14px_rgba(253,224,71,0.25)]' : 'bg-white/[0.05] text-on-surface/60 font-medium border border-white/[0.08]'}`}
             >
               <Wallet className="h-[18px] w-[18px]" />
               Ingreso
             </button>
           </div>
 
-          {type === 'EXPENSE' && (
-            <div className="space-y-3 pt-2">
-              <p className="text-[10px] text-center uppercase tracking-[0.2em] text-on-surface/40 font-bold">
-                ¿Con qué pagaste?
-              </p>
-              <div className="flex items-center justify-center gap-3">
-                <button
-                  onClick={() => setPaymentMethod('CASH')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm transition-all ${paymentMethod === 'CASH' ? 'bg-white/10 text-primary border border-primary/30 font-bold' : 'bg-surface-container-high text-on-surface/50 border border-transparent font-medium'}`}
-                  type="button"
-                >
-                  <Wallet className="h-4 w-4" />
-                  Débito
-                </button>
-                <button
-                  onClick={() => setPaymentMethod('CREDIT')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm transition-all ${paymentMethod === 'CREDIT' ? 'bg-white/10 text-primary border border-primary/30 font-bold' : 'bg-surface-container-high text-on-surface/50 border border-transparent font-medium'}`}
-                  type="button"
-                >
-                  <HandCoins className="h-4 w-4" />
-                  Crédito
-                </button>
-              </div>
+          {/* Payment method selector — shown for both EXPENSE and INCOME */}
+          <div className="space-y-3 pt-2">
+            <p className="text-[10px] text-center uppercase tracking-[0.2em] text-on-surface/40 font-bold">
+              {type === 'EXPENSE' ? '¿Con qué pagaste?' : '¿A dónde va el ingreso?'}
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={() => setPaymentMethod('CASH')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm transition-all ${paymentMethod === 'CASH' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold' : 'bg-white/[0.04] text-on-surface/50 border border-white/[0.06] font-medium'}`}
+                type="button"
+              >
+                <Wallet className="h-4 w-4" />
+                Débito
+              </button>
+              <button
+                onClick={() => setPaymentMethod('CREDIT')}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm transition-all ${paymentMethod === 'CREDIT' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold' : 'bg-white/[0.04] text-on-surface/50 border border-white/[0.06] font-medium'}`}
+                type="button"
+              >
+                <CreditCard className="h-4 w-4" />
+                Crédito
+              </button>
             </div>
-          )}
+          </div>
 
           {type === 'EXPENSE' ? (
             <div className="space-y-3">
@@ -232,15 +254,31 @@ export default function ManualEntry() {
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-10">
-        {numpad.map((buttonValue) => (
-          <button
-            key={buttonValue}
-            onClick={() => handleNumpadClick(buttonValue)}
-            className={`glass-key ghost-border text-2xl font-bold py-6 rounded-2xl active:scale-95 transition-all ${buttonValue === 'backspace' ? 'text-primary hover:bg-primary/10' : 'text-on-surface hover:bg-primary/10'}`}
-          >
-            {buttonValue === 'backspace' ? <Delete className="mx-auto h-6 w-6" /> : buttonValue}
-          </button>
-        ))}
+        {numpad.map((buttonValue) =>
+          buttonValue === 'backspace' ? (
+            <button
+              key={buttonValue}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                handleBackspaceStart();
+              }}
+              onPointerUp={handleBackspaceEnd}
+              onPointerLeave={handleBackspaceEnd}
+              onContextMenu={(e) => e.preventDefault()}
+              className="bg-white/[0.04] border border-white/[0.08] text-primary text-2xl font-bold py-6 rounded-2xl active:scale-95 active:bg-primary/15 transition-all select-none touch-manipulation hover:bg-primary/10"
+            >
+              <Delete className="mx-auto h-6 w-6" />
+            </button>
+          ) : (
+            <button
+              key={buttonValue}
+              onClick={() => handleNumpadClick(buttonValue)}
+              className="bg-white/[0.04] border border-white/[0.08] text-on-surface text-2xl font-bold py-6 rounded-2xl active:scale-95 active:bg-primary/15 transition-all select-none touch-manipulation hover:bg-primary/10"
+            >
+              {buttonValue}
+            </button>
+          )
+        )}
       </div>
 
       <button

@@ -9,41 +9,57 @@ export const dynamic = 'force-dynamic';
 
 export default async function History() {
   const user = await requireAuthUser();
-  const transactions = await prisma.transaction.findMany({
-    where: {
-      userId: user.id,
-    },
-    include: {
-      category: true,
-    },
-    orderBy: { date: 'desc' },
-  });
-  const categories = await prisma.category.findMany({
-    orderBy: { name: 'asc' },
-  });
+  let transactions: TransactionRecord[] = [];
+  let categories: any[] = [];
+  let groupedTransactions: Record<string, TransactionRecord[]> = {};
 
-  const groupedTransactions = transactions.reduce((groups, tx) => {
-    const dateStr = new Date(tx.date).toLocaleDateString('es-CL', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-    const capitalizedDateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+  try {
+    const [transactionsResult, categoriesResult] = await Promise.all([
+      prisma.transaction.findMany({
+        where: { userId: user.id },
+        include: { category: true },
+        orderBy: { date: 'desc' },
+      }),
+      prisma.category.findMany({
+        orderBy: { name: 'asc' },
+      }),
+    ]);
 
-    if (!groups[capitalizedDateStr]) {
-      groups[capitalizedDateStr] = [];
-    }
-    groups[capitalizedDateStr].push(tx as TransactionRecord);
-    return groups;
-  }, {} as Record<string, TransactionRecord[]>);
+    transactions = transactionsResult as TransactionRecord[];
+    categories = categoriesResult;
+
+    groupedTransactions = transactions.reduce((groups, tx) => {
+      try {
+        const d = new Date(tx.date);
+        if (isNaN(d.getTime())) return groups;
+
+        const dateStr = d.toLocaleDateString('es-CL', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const capitalizedDateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+
+        if (!groups[capitalizedDateStr]) {
+          groups[capitalizedDateStr] = [];
+        }
+        groups[capitalizedDateStr].push(tx);
+      } catch (e) {
+        console.error('Error grouping transaction:', tx.id, e);
+      }
+      return groups;
+    }, {} as Record<string, TransactionRecord[]>);
+  } catch (error) {
+    console.error('History load error:', error);
+  }
 
   return (
     <main className="pt-24 px-4 max-w-md mx-auto pb-32 space-y-6">
       <div className="flex justify-between items-center mt-2 px-2">
         <h1 className="text-3xl fintech-hero-number tracking-tight">Historial</h1>
         <div className="flex items-center gap-3">
-          <ExportButton transactions={transactions as TransactionRecord[]} />
+          <ExportButton transactions={transactions} />
           <button className="fintech-circle-btn !w-10 !h-10">
             <ListFilter className="h-4 w-4" />
           </button>

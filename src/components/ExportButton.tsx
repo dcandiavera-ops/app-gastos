@@ -5,12 +5,23 @@ import type { TransactionRecord } from '@/lib/transaction-types';
 
 export default function ExportButton({ transactions }: { transactions: TransactionRecord[] }) {
   const exportToCSV = () => {
-    const headers = ['ID,Fecha,Descripcion,Monto,Tipo'];
+    const headers = ['ID,Fecha,Descripcion,Monto,Tipo,Categoria,Metodo_Pago'];
     const rows = transactions.map((tx) => {
       const date = new Date(tx.date).toLocaleDateString('es-CL');
       const desc = `"${(tx.description || '').replace(/"/g, '""')}"`;
       const type = tx.type === 'INCOME' ? 'Ingreso' : 'Gasto';
-      return `${tx.id},${date},${desc},${tx.amount},${type}`;
+      const categoryName = tx.category?.name || 'Sin categoría';
+      
+      let paymentMethod = '';
+      if (tx.paymentMethod === 'CREDIT') {
+        paymentMethod = 'Crédito';
+      } else if (tx.paymentMethod === 'DEBIT') {
+        paymentMethod = 'Débito / Efectivo';
+      } else {
+        paymentMethod = tx.paymentMethod || 'Desconocido';
+      }
+      
+      return `${tx.id},${date},${desc},${tx.amount},${type},"${categoryName}","${paymentMethod}"`;
     });
 
     const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers, ...rows].join('\n');

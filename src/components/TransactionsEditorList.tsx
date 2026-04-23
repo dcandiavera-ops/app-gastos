@@ -95,7 +95,7 @@ export default function TransactionsEditorList({
           date: draft.date,
           description: draft.description,
           type: draft.type,
-          paymentMethod: draft.type === 'INCOME' ? 'CASH' : draft.paymentMethod,
+          paymentMethod: draft.paymentMethod,
           categoryId: draft.type === 'EXPENSE' ? draft.categoryId : null,
         }),
       });
@@ -202,29 +202,27 @@ export default function TransactionsEditorList({
                   </button>
                 </div>
 
-                {draft.type === 'EXPENSE' ? (
-                  <div className="space-y-2">
-                    <p className="text-[10px] uppercase font-bold text-on-surface-variant/70 tracking-wider">Cuenta</p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setDraft({ ...draft, paymentMethod: 'CASH' })}
-                        className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${draft.paymentMethod === 'CASH' ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/5 text-on-surface-variant'}`}
-                        type="button"
-                      >
-                        <Wallet className="h-3 w-3" />
-                        Débito
-                      </button>
-                      <button
-                        onClick={() => setDraft({ ...draft, paymentMethod: 'CREDIT' })}
-                        className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${draft.paymentMethod === 'CREDIT' ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/5 text-on-surface-variant'}`}
-                        type="button"
-                      >
-                        <HandCoins className="h-3 w-3" />
-                        Crédito
-                      </button>
-                    </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] uppercase font-bold text-on-surface-variant/70 tracking-wider">Cuenta</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setDraft({ ...draft, paymentMethod: 'CASH' })}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${draft.paymentMethod === 'CASH' ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/5 text-on-surface-variant'}`}
+                      type="button"
+                    >
+                      <Wallet className="h-3 w-3" />
+                      Débito
+                    </button>
+                    <button
+                      onClick={() => setDraft({ ...draft, paymentMethod: 'CREDIT' })}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-2 ${draft.paymentMethod === 'CREDIT' ? 'bg-primary/10 border-primary text-primary' : 'bg-white/5 border-white/5 text-on-surface-variant'}`}
+                      type="button"
+                    >
+                      <HandCoins className="h-3 w-3" />
+                      Crédito
+                    </button>
                   </div>
-                ) : null}
+                </div>
 
                 {draft.type === 'EXPENSE' ? (
                   <div className="space-y-2 mt-2">
@@ -294,11 +292,9 @@ export default function TransactionsEditorList({
                     <p className="text-[11px] text-on-surface-variant font-medium mt-0.5 truncate">
                       {new Date(tx.date).toLocaleDateString('es-CL')}
                       {tx.category ? ` · ${tx.category.name}` : ''}
-                      {tx.type === 'EXPENSE' && (
-                        <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[9px] uppercase font-bold text-primary/70">
-                          {tx.paymentMethod === 'CREDIT' ? 'Crédito' : 'Débito'}
-                        </span>
-                      )}
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded-md bg-white/5 border border-white/10 text-[9px] uppercase font-bold text-primary/70">
+                        {tx.paymentMethod === 'CREDIT' ? 'Crédito' : 'Débito'}
+                      </span>
                     </p>
                   </div>
                 </div>
