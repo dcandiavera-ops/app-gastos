@@ -7,10 +7,10 @@ export function startOfCurrentMonth() {
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
   
-  if (now.getDate() >= 25) {
-    return new Date(currentYear, currentMonth, 25);
+  if (now.getDate() >= 24) {
+    return new Date(currentYear, currentMonth, 24);
   } else {
-    return new Date(currentYear, currentMonth - 1, 25);
+    return new Date(currentYear, currentMonth - 1, 24);
   }
 }
 
@@ -19,7 +19,7 @@ export function getMonthLabelDate() {
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
   
-  if (now.getDate() >= 25) {
+  if (now.getDate() >= 24) {
     return new Date(currentYear, currentMonth + 1, 1);
   } else {
     return new Date(currentYear, currentMonth, 1);
@@ -32,10 +32,10 @@ export function getDaysRemainingInCycle() {
   const currentYear = now.getFullYear();
   let endDate: Date;
   
-  if (now.getDate() >= 25) {
-    endDate = new Date(currentYear, currentMonth + 1, 24, 23, 59, 59, 999);
+  if (now.getDate() >= 24) {
+    endDate = new Date(currentYear, currentMonth + 1, 23, 23, 59, 59, 999);
   } else {
-    endDate = new Date(currentYear, currentMonth, 24, 23, 59, 59, 999);
+    endDate = new Date(currentYear, currentMonth, 23, 23, 59, 59, 999);
   }
   
   const diffTime = endDate.getTime() - now.getTime();
